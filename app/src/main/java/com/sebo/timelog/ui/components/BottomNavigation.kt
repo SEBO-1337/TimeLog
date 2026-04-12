@@ -28,7 +28,7 @@ fun TimeLogBottomNavigation(
                 onClick = {
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
-                            // Pop bis zum Start-Graph um Back-Stack sauber zu halten
+                            // Pop bis zum Start-Graf um Back-Stack sauber zu halten
                             popUpTo(navController.graph.startDestinationId) {
                                 saveState = true
                             }

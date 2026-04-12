@@ -23,13 +23,13 @@ import com.sebo.timelog.ui.screens.timer.TimerUiState
 
 @Composable
 fun TimerControls(
+    modifier: Modifier = Modifier,
     uiState: TimerUiState,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onStop: () -> Unit,
-    onDiscard: () -> Unit,
-    modifier: Modifier = Modifier
+    onDiscard: () -> Unit
 ) {
     Row(
         modifier = modifier,

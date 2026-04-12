@@ -35,8 +35,8 @@ import com.sebo.timelog.ui.components.EmptyState
 import com.sebo.timelog.ui.components.LoadingIndicator
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
 import com.sebo.timelog.utils.TimeFormatter
-import com.sebo.timelog.utils.toCurrencyString
 import com.sebo.timelog.utils.toComposeColor
+import com.sebo.timelog.utils.toCurrencyString
 
 @Composable
 fun StatisticsScreen(

@@ -10,7 +10,6 @@ import com.sebo.timelog.data.repositories.WorkLogRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,7 +23,7 @@ data class HistoryUiState(
 
 class HistoryViewModel(
     private val workLogRepository: WorkLogRepository,
-    private val projectRepository: ProjectRepository
+    projectRepository: ProjectRepository
 ) : ViewModel() {
 
     private val _filterProjectId = MutableStateFlow<Long?>(null)

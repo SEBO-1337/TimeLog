@@ -26,7 +26,7 @@ object TimeFormatter {
 
     /**
      * Formatiert Dezimalstunden in lesbaren String
-     * z.B. 1.5 -> "1h 30min"
+     * z.B. 1.5 → "1h 30min"
      */
     fun formatHoursDecimal(hours: Double): String {
         val h = hours.toInt()

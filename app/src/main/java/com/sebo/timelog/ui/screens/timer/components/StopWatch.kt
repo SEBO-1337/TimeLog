@@ -15,9 +15,9 @@ import com.sebo.timelog.utils.TimeFormatter
 
 @Composable
 fun StopWatch(
+    modifier: Modifier = Modifier,
     elapsedMillis: Long,
-    isRunning: Boolean,
-    modifier: Modifier = Modifier
+    isRunning: Boolean
 ) {
     Box(
         modifier = modifier.size(250.dp),

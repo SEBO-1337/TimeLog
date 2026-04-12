@@ -29,7 +29,7 @@ sealed class TimerUiState {
 class TimerViewModel(
     private val timerRepository: TimerRepository,
     private val workLogRepository: WorkLogRepository,
-    private val projectRepository: ProjectRepository
+    projectRepository: ProjectRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TimerUiState>(TimerUiState.Idle)
@@ -103,7 +103,7 @@ class TimerViewModel(
                 timerRepository.deleteAll()
                 timerRepository.insert(timer)
                 _uiState.value = TimerUiState.Running
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.value = TimerUiState.Error("Timer konnte nicht gestartet werden")
             }
         }

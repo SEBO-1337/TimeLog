@@ -1,5 +1,6 @@
 package com.sebo.timelog.ui.screens.projects.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import com.sebo.timelog.data.local.entities.Project
 import com.sebo.timelog.data.local.entities.ProjectStatus
 import com.sebo.timelog.utils.toComposeColor
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun ProjectCard(
     project: Project,
@@ -94,7 +96,7 @@ fun ProjectCard(
                 }
             }
 
-            // Aktions-Buttons
+            // Actions-Buttons
             IconButton(onClick = onEdit) {
                 Icon(
                     Icons.Default.Edit,

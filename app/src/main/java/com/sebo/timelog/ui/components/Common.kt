@@ -60,9 +60,9 @@ fun EmptyState(
 
 @Composable
 fun ErrorView(
+    modifier: Modifier = Modifier,
     message: String,
-    onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onRetry: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier

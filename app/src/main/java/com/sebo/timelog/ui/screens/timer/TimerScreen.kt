@@ -28,8 +28,8 @@ import com.sebo.timelog.ui.screens.timer.components.TimerControls
 
 @Composable
 fun TimerScreen(
-    viewModel: TimerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: TimerViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val elapsedMillis by viewModel.elapsedMillis.collectAsState()

@@ -3,9 +3,9 @@ package com.sebo.timelog.ui.screens.timer.components
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,11 +19,11 @@ import com.sebo.timelog.data.local.entities.Project
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectSelector(
+    modifier: Modifier = Modifier,
     projects: List<Project>,
     selectedProjectId: Long?,
     onProjectSelected: (Long) -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedProject = projects.find { it.id == selectedProjectId }

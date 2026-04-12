@@ -1,10 +1,11 @@
 package com.sebo.timelog.utils
 
-import android.app.Activity
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import com.sebo.timelog.TimeLogApplication
 import com.sebo.timelog.di.AppContainer
+import androidx.core.graphics.toColorInt
 
 /**
  * Extension für einfachen Zugriff auf den AppContainer
@@ -17,8 +18,8 @@ val Context.appContainer: AppContainer
  */
 fun String.toComposeColor(): Color {
     return try {
-        Color(android.graphics.Color.parseColor(this))
-    } catch (e: Exception) {
+        Color(this.toColorInt())
+    } catch (_: Exception) {
         Color(0xFF2196F3) // Default Blau
     }
 }
@@ -41,5 +42,6 @@ fun Double.toFormattedHours(): String = TimeFormatter.formatHoursDecimal(this)
 /**
  * Formatiert einen Geldbetrag
  */
+@SuppressLint("DefaultLocale")
 fun Double.toCurrencyString(): String = String.format("%.2f €", this)
 

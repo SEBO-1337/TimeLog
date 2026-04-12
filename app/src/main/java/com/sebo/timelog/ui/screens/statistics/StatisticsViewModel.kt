@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.sebo.timelog.data.local.entities.Project
-import com.sebo.timelog.data.local.entities.WorkLog
 import com.sebo.timelog.data.repositories.ProjectRepository
 import com.sebo.timelog.data.repositories.WorkLogRepository
 import kotlinx.coroutines.flow.SharingStarted
