@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.sebo.timelog" />
+                  <option name="mobileSdkAppId" value="1:700249192890:android:f323794d2f22f458754583" />
+                  <option name="projectId" value="timelog-15f57" />
+                  <option name="projectNumber" value="700249192890" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
