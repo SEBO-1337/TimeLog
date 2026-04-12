@@ -1,0 +1,26 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "tesft",
+      "description": null,
+      "color": "#FF9800",
+      "hourlyRate": 19,
+      "status": "ACTIVE",
+      "createdAt": 1776021448473,
+      "updatedAt": 1776021448473
+    },
+    {
+      "id": 2,
+      "name": "gcggc",
+      "description": null,
+      "color": "#009688",
+      "hourlyRate": 0,
+      "status": "ACTIVE",
+      "createdAt": 1776021805384,
+      "updatedAt": 1776021805384
+    }
+  ],
+  "work_logs": [],
+  "active_timer": null
+}
