@@ -1,7 +1,6 @@
 package com.sebo.timelog.di
 
 import android.content.Context
-import com.sebo.timelog.BuildConfig
 import com.sebo.timelog.data.local.database.TimeLogDatabase
 import com.sebo.timelog.data.remote.SyncService
 import com.sebo.timelog.data.remote.SyncStatus
@@ -22,8 +21,8 @@ class AppContainer(context: Context) {
     private val database        = TimeLogDatabase.getInstance(context)
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** null, wenn TIMELOG_SERVER_URL in local.properties nicht gesetzt ist */
-    val syncService: SyncService? = SyncService.create(BuildConfig.TIMELOG_SERVER_URL)
+    /** null, wenn Firebase nicht konfiguriert ist (z. B. ohne google-services.json). */
+    val syncService: SyncService? = SyncService.create(context)
 
     private val noServerSyncStatus = MutableStateFlow(SyncStatus.notConfigured())
     val syncStatus: StateFlow<SyncStatus> = syncService?.syncStatus ?: noServerSyncStatus.asStateFlow()

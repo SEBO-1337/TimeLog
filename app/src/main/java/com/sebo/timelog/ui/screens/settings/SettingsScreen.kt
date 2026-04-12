@@ -84,7 +84,7 @@ fun SettingsScreen(
                     }
                     Icon(icon, contentDescription = null)
                 },
-                title = "Web-Sync",
+                title = "Cloud-Sync (Firebase)",
                 subtitle = syncStatusSubtitle(syncStatus, dateFormat),
                 onClick = { }
             )
@@ -139,7 +139,7 @@ private fun SettingsItem(
 
 private fun syncStatusSubtitle(status: SyncStatus, dateFormat: DateFormat): String {
     if (!status.configured) {
-        return "Kein Server konfiguriert"
+        return "Firebase nicht konfiguriert"
     }
     if (status.isSyncing) {
         return "Synchronisiert gerade..."

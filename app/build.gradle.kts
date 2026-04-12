@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("com.google.gms.google-services")
 }
 
 import java.util.Properties
@@ -87,6 +88,11 @@ dependencies {
 
     // OkHttp (Web-Dashboard Sync)
     implementation(libs.okhttp)
+
+    // Firebase (Cloud Sync)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Material Icons Extended
     implementation(libs.androidx.compose.material.icons.extended)
