@@ -207,13 +207,20 @@ html, body {
 .status-archived { background: rgba(148,163,184,.12); color: var(--muted); }
 
 .project-numbers {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
 }
 .p-num {
   background: rgba(9,13,28,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 10px;
   padding: 10px; text-align: center;
 }
 .p-num-val { font-size: 18px; font-weight: 700; color: #c4b5fd; font-variant-numeric: tabular-nums; }
+.p-num-val-money {
+  font-size: 16px;
+  line-height: 1.3;
+  word-break: break-word;
+}
 .p-num-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
 /* ── Verlauf-Filter ──────────────────────────────────────────── */

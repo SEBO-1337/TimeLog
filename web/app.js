@@ -55,6 +55,26 @@ function fmtHours(h) {
   return `${hh}h ${mm}min`;
 }
 
+function fmtCurrency(amount) {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function getBilledHours(log) {
+  const workedHours = Number(log.hoursWorked) || 0;
+  const explicitBilledHours = Math.max(0, Number(log.hoursBilled) || 0);
+
+  if (log.billableStatus === 'BILLED') {
+    return Math.min(workedHours, explicitBilledHours > 0 ? explicitBilledHours : workedHours);
+  }
+
+  return Math.min(workedHours, explicitBilledHours);
+}
+
 function elapsedMs(timer) {
   if (!timer) return 0;
   if (timer.isRunning) return Math.max(0, Date.now() - timer.startTime - timer.pausedDuration);
@@ -190,7 +210,19 @@ function renderProjects() {
 
   const enriched = state.projects.map(p => {
     const logs = state.workLogs.filter(l => l.projectId === p.id);
-    return { ...p, totalHours: logs.reduce((s, l) => s + (l.hoursWorked || 0), 0), logCount: logs.length };
+    const totalHours = logs.reduce((sum, log) => sum + (Number(log.hoursWorked) || 0), 0);
+    const outstandingHours = logs.reduce((sum, log) => {
+      const workedHours = Number(log.hoursWorked) || 0;
+      return sum + Math.max(0, workedHours - getBilledHours(log));
+    }, 0);
+
+    return {
+      ...p,
+      totalHours,
+      logCount: logs.length,
+      outstandingHours,
+      outstandingAmount: outstandingHours * (Number(p.hourlyRate) || 0),
+    };
   }).sort((a, b) => b.totalHours - a.totalHours);
 
   el.innerHTML = enriched.map(p => `<div class="project-card">
@@ -202,6 +234,9 @@ function renderProjects() {
     <div class="project-numbers">
       <div class="p-num"><div class="p-num-val">${fmtHours(p.totalHours)}</div><div class="p-num-lbl">Gesamt</div></div>
       <div class="p-num"><div class="p-num-val">${p.logCount}</div><div class="p-num-lbl">Eintraege</div></div>
+      <div class="p-num"><div class="p-num-val">${fmtHours(p.outstandingHours)}</div><div class="p-num-lbl">Offene Stunden</div></div>
+      <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(Number(p.hourlyRate) || 0)}</div><div class="p-num-lbl">Stundenlohn</div></div>
+      <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(p.outstandingAmount)}</div><div class="p-num-lbl">Offener Betrag</div></div>
     </div>
   </div>`).join('');
 }
