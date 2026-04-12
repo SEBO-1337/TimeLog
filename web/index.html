@@ -115,11 +115,23 @@
     <!-- ── Verlauf ────────────────────────────── -->
     <section id="page-history" class="page">
       <div class="filters">
-        <select id="filter-project" class="filter-input">
-          <option value="">Alle Projekte</option>
-        </select>
-        <input type="date" id="filter-from" class="filter-input">
-        <input type="date" id="filter-to"   class="filter-input">
+        <div class="filter-group filter-group-primary">
+          <div class="filter-label-row">
+            <label for="filter-project" class="filter-label">Projekt</label>
+            <span class="filter-hint">Zeigt Einträge für ein bestimmtes Projekt oder alle Projekte</span>
+          </div>
+          <select id="filter-project" class="filter-input">
+            <option value="">Alle Projekte</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-from" class="filter-label">Von</label>
+          <input type="date" id="filter-from" class="filter-input">
+        </div>
+        <div class="filter-group">
+          <label for="filter-to" class="filter-label">Bis</label>
+          <input type="date" id="filter-to" class="filter-input">
+        </div>
       </div>
       <div id="history-list" class="log-list">
         <div class="loading">Lade Verlauf …</div>
