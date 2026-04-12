@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.sebo.timelog"
     compileSdk {
@@ -20,6 +22,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Server-URL explizit aus local.properties lesen (findProperty sieht diese Datei nicht immer)
+        val localProps = Properties().apply {
+            val file = rootProject.file("local.properties")
+            if (file.exists()) {
+                file.inputStream().use { load(it) }
+            }
+        }
+        val serverUrl = localProps.getProperty("timelog.server.url", "")
+        buildConfigField("String", "TIMELOG_SERVER_URL", "\"$serverUrl\"")
     }
 
     buildTypes {
@@ -72,6 +84,9 @@ dependencies {
 
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
+
+    // OkHttp (Web-Dashboard Sync)
+    implementation(libs.okhttp)
 
     // Material Icons Extended
     implementation(libs.androidx.compose.material.icons.extended)

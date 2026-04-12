@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TimeLog">
+  <meta name="theme-color" content="#1565C0">
+  <title>TimeLog Dashboard</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="header-icon">⏱</span>
+      <span class="header-title">TimeLog</span>
+    </div>
+    <div class="header-right">
+      <span id="current-time" class="header-clock"></span>
+      <button class="refresh-btn" onclick="refreshData()" title="Aktualisieren">↻</button>
+    </div>
+  </header>
+
+  <!-- Seiten-Container -->
+  <main class="app-content">
+
+    <!-- ── Übersicht ────────────────────────────── -->
+    <section id="page-dashboard" class="page active">
+
+      <!-- Aktiver Timer -->
+      <div id="timer-card" class="timer-card hidden">
+        <div class="timer-top">
+          <div class="timer-dot" id="timer-dot"></div>
+          <span id="timer-project-name" class="timer-project-name">Projekt</span>
+          <span id="timer-badge" class="timer-badge running">LÄUFT</span>
+        </div>
+        <div id="timer-display" class="timer-display">00:00:00</div>
+        <div id="timer-desc" class="timer-desc"></div>
+      </div>
+
+      <!-- Statistik-Kacheln -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="stat-today">–</div>
+          <div class="stat-lbl">Heute</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-week">–</div>
+          <div class="stat-lbl">Diese Woche</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-month">–</div>
+          <div class="stat-lbl">Diesen Monat</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-projects">–</div>
+          <div class="stat-lbl">Aktive Projekte</div>
+        </div>
+      </div>
+
+      <h2 class="section-title">Letzte Einträge</h2>
+      <div id="recent-logs" class="log-list">
+        <div class="loading">Lade Daten …</div>
+      </div>
+    </section>
+
+    <!-- ── Projekte ───────────────────────────── -->
+    <section id="page-projects" class="page">
+      <div id="projects-container" class="projects-list">
+        <div class="loading">Lade Projekte …</div>
+      </div>
+    </section>
+
+    <!-- ── Verlauf ────────────────────────────── -->
+    <section id="page-history" class="page">
+      <div class="filters">
+        <select id="filter-project" class="filter-input">
+          <option value="">Alle Projekte</option>
+        </select>
+        <input type="date" id="filter-from" class="filter-input">
+        <input type="date" id="filter-to"   class="filter-input">
+      </div>
+      <div id="history-list" class="log-list">
+        <div class="loading">Lade Verlauf …</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom-Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="navigate('dashboard', this)">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-lbl">Übersicht</span>
+    </button>
+    <button class="nav-btn" onclick="navigate('projects', this)">
+      <span class="nav-icon">📁</span>
+      <span class="nav-lbl">Projekte</span>
+    </button>
+    <button class="nav-btn" onclick="navigate('history', this)">
+      <span class="nav-icon">📋</span>
+      <span class="nav-lbl">Verlauf</span>
+    </button>
+  </nav>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+

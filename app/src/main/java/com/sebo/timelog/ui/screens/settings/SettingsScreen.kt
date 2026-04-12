@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -17,14 +20,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sebo.timelog.data.remote.SyncStatus
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
+import com.sebo.timelog.utils.appContainer
+import java.text.DateFormat
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val syncStatus by context.appContainer.syncStatus.collectAsState()
+    val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+
     Scaffold(
         topBar = {
             TimeLogTopAppBar(title = "Einstellungen")
@@ -60,6 +74,21 @@ fun SettingsScreen(
 
             // Daten
             SettingsSection(title = "Daten")
+            SettingsItem(
+                icon = {
+                    val icon = when {
+                        !syncStatus.configured -> Icons.Default.CloudOff
+                        syncStatus.isSyncing -> Icons.Default.Sync
+                        syncStatus.lastErrorAt != null -> Icons.Default.CloudOff
+                        else -> Icons.Default.CloudDone
+                    }
+                    Icon(icon, contentDescription = null)
+                },
+                title = "Web-Sync",
+                subtitle = syncStatusSubtitle(syncStatus, dateFormat),
+                onClick = { }
+            )
+
             SettingsItem(
                 icon = { Icon(Icons.Default.Storage, contentDescription = null) },
                 title = "Datenmanagement",
@@ -106,5 +135,23 @@ private fun SettingsItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
     )
+}
+
+private fun syncStatusSubtitle(status: SyncStatus, dateFormat: DateFormat): String {
+    if (!status.configured) {
+        return "Kein Server konfiguriert"
+    }
+    if (status.isSyncing) {
+        return "Synchronisiert gerade..."
+    }
+    if (status.lastErrorAt != null) {
+        val time = dateFormat.format(status.lastErrorAt)
+        val reason = status.lastErrorMessage ?: "Unbekannter Fehler"
+        return "Fehler am $time ($reason)"
+    }
+    if (status.lastSuccessAt != null) {
+        return "Zuletzt synchronisiert: ${dateFormat.format(status.lastSuccessAt)}"
+    }
+    return "Noch keine Synchronisierung"
 }
 

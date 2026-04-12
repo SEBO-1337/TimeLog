@@ -2,9 +2,13 @@ package com.sebo.timelog.data.repositories
 
 import com.sebo.timelog.data.local.dao.WorkLogDao
 import com.sebo.timelog.data.local.entities.WorkLog
+import com.sebo.timelog.data.remote.SyncService
 import kotlinx.coroutines.flow.Flow
 
-class WorkLogRepository(private val workLogDao: WorkLogDao) {
+class WorkLogRepository(
+    private val workLogDao: WorkLogDao,
+    private val syncService: SyncService? = null
+) {
 
     fun getAllWorkLogs(): Flow<List<WorkLog>> = workLogDao.getAllWorkLogs()
 
@@ -39,16 +43,30 @@ class WorkLogRepository(private val workLogDao: WorkLogDao) {
     fun getLastActivityDate(projectId: Long): Flow<Long?> =
         workLogDao.getLastActivityDate(projectId)
 
-    suspend fun insert(workLog: WorkLog): Long = workLogDao.insert(workLog)
+    suspend fun insert(workLog: WorkLog): Long {
+        val id = workLogDao.insert(workLog)
+        syncService?.syncWorkLog(workLog.copy(id = id))
+        return id
+    }
 
-    suspend fun insertAll(workLogs: List<WorkLog>) = workLogDao.insertAll(workLogs)
+    suspend fun insertAll(workLogs: List<WorkLog>) {
+        workLogDao.insertAll(workLogs)
+        workLogs.forEach { syncService?.syncWorkLog(it) }
+    }
 
-    suspend fun update(workLog: WorkLog) = workLogDao.update(
-        workLog.copy(updatedAt = System.currentTimeMillis())
-    )
+    suspend fun update(workLog: WorkLog) {
+        val updated = workLog.copy(updatedAt = System.currentTimeMillis())
+        workLogDao.update(updated)
+        syncService?.syncWorkLog(updated)
+    }
 
-    suspend fun delete(workLog: WorkLog) = workLogDao.delete(workLog)
+    suspend fun delete(workLog: WorkLog) {
+        workLogDao.delete(workLog)
+        syncService?.deleteWorkLog(workLog.id)
+    }
 
-    suspend fun deleteById(id: Long) = workLogDao.deleteById(id)
+    suspend fun deleteById(id: Long) {
+        workLogDao.deleteById(id)
+        syncService?.deleteWorkLog(id)
+    }
 }
-
