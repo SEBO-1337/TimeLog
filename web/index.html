@@ -14,6 +14,40 @@
 </head>
 <body>
 
+  <section id="auth-screen" class="auth-screen hidden">
+    <div class="auth-card">
+      <h1>TimeLog</h1>
+      <p class="auth-subtitle">Bitte anmelden, um das Dashboard zu nutzen.</p>
+
+      <div id="auth-error" class="auth-error hidden"></div>
+
+      <form id="login-form" class="auth-form">
+        <input id="login-email" type="email" class="auth-input" placeholder="E-Mail" required>
+        <input id="login-password" type="password" class="auth-input" placeholder="Passwort" required>
+        <button type="submit" class="auth-btn">Login</button>
+      </form>
+
+      <form id="register-form" class="auth-form hidden">
+        <input id="register-email" type="email" class="auth-input" placeholder="E-Mail" required>
+        <input id="register-password" type="password" class="auth-input" placeholder="Passwort (mind. 6 Zeichen)" required>
+        <input id="register-password-repeat" type="password" class="auth-input" placeholder="Passwort wiederholen" required>
+        <button type="submit" class="auth-btn">Registrieren</button>
+      </form>
+
+      <button id="auth-toggle" class="auth-link-btn" type="button">Noch kein Konto? Registrieren</button>
+    </div>
+  </section>
+
+  <section id="pending-screen" class="auth-screen hidden">
+    <div class="auth-card">
+      <h1>Zugang angefragt</h1>
+      <p class="auth-subtitle">Dein Konto wartet auf Freigabe durch einen Admin.</p>
+      <button id="pending-logout-btn" class="auth-btn" type="button">Abmelden</button>
+    </div>
+  </section>
+
+  <div id="app-shell" class="hidden">
+
   <!-- App Header -->
   <header class="app-header">
     <div class="header-left">
@@ -21,8 +55,10 @@
       <span class="header-title">TimeLog</span>
     </div>
     <div class="header-right">
+      <span id="current-user-email" class="header-user"></span>
       <span id="current-time" class="header-clock"></span>
       <button class="refresh-btn" onclick="refreshData()" title="Aktualisieren">↻</button>
+      <button id="logout-btn" class="refresh-btn" title="Logout">↪</button>
     </div>
   </header>
 
@@ -90,6 +126,14 @@
       </div>
     </section>
 
+    <!-- ── Admin ────────────────────────────── -->
+    <section id="page-admin" class="page">
+      <h2 class="section-title">Nutzerverwaltung</h2>
+      <div id="admin-users" class="projects-list">
+        <div class="loading">Lade Nutzer ...</div>
+      </div>
+    </section>
+
   </main>
 
   <!-- Bottom-Navigation -->
@@ -106,9 +150,19 @@
       <span class="nav-icon">📋</span>
       <span class="nav-lbl">Verlauf</span>
     </button>
+    <button id="nav-admin" class="nav-btn hidden" onclick="navigate('admin', this)">
+      <span class="nav-icon">🛡️</span>
+      <span class="nav-lbl">Admin</span>
+    </button>
   </nav>
 
-  <script src="/app.js"></script>
+  </div>
+
+  <script defer src="/__/firebase/11.10.0/firebase-app-compat.js"></script>
+  <script defer src="/__/firebase/11.10.0/firebase-auth-compat.js"></script>
+  <script defer src="/__/firebase/11.10.0/firebase-firestore-compat.js"></script>
+  <script defer src="/__/firebase/init.js"></script>
+  <script defer src="/app.js"></script>
 </body>
 </html>
 

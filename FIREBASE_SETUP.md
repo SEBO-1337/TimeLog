@@ -52,3 +52,39 @@ firebase deploy --only firestore:rules
 
 Hinweis: Die App hat jetzt eigene Screens fuer Login und Registrierung integriert.
 
+## 7) Web Login/Registrierung
+
+- Das Web-Dashboard (`web/`) nutzt jetzt Firebase Auth (E-Mail/Passwort).
+- Auf `https://timelog-15f57.web.app` erscheint bei ausgeloggten Nutzern ein Login/Registrierungs-Screen.
+- Nach Login werden die Daten aus Firestore (`shared/default/...`) geladen.
+
+Wenn nach Login keine Daten erscheinen, pruefe die Firestore Rules.
+
+## 8) Rollenmodell: ADMIN / CUSTOMER / NEW
+
+- Neue Nutzer werden beim ersten Login automatisch als `NEW` in `users/{uid}` angelegt.
+- `NEW`: sieht keine Projektdaten und bleibt auf der Warteseite.
+- `CUSTOMER`: sieht nur freigegebene Projekte (`allowedProjectIds`) und zugehoerige WorkLogs.
+- `ADMIN`: sieht alle Daten und kann im Web unter dem Tab `Admin` Rollen/Freigaben setzen.
+
+Erwartete User-Struktur in Firestore:
+
+```txt
+users/{uid}
+  uid: string
+  email: string
+  role: "ADMIN" | "CUSTOMER" | "NEW"
+  allowedProjectIds: number[]
+```
+
+Die Rules erzwingen entsprechend den Zugriff auf `shared/default/...`.
+
+Beispiel (vereinfacht):
+
+```txt
+match /shared/default/projects/{projectDocId} {
+  allow read: if isAdmin() || hasProjectAccess(resource.data.id);
+  allow write: if isAdmin();
+}
+```
+

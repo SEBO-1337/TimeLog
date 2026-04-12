@@ -1,10 +1,69 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Development rule set for the current shared document structure.
-    // Tighten this before production use.
-    match /shared/default/{document=**} {
-      allow read, write: if true;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return userDoc().data.role;
+    }
+
+    function isAdmin() {
+      return hasUserDoc() && userRole() == 'ADMIN';
+    }
+
+    function isCustomer() {
+      return hasUserDoc() && userRole() == 'CUSTOMER';
+    }
+
+    function hasProjectAccess(projectId) {
+      return isCustomer() && projectId in userDoc().data.allowedProjectIds;
+    }
+
+    // Nutzerprofile und Rollen
+
+    match /users/{userId} {
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'NEW'
+        && request.resource.data.allowedProjectIds is list;
+
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // Rollen/Freigaben dürfen nur Admins setzen.
+      allow update, delete: if isAdmin();
+    }
+
+    // Freigegebene Projektdaten
+    match /shared/default/projects/{projectDocId} {
+      allow read: if isAdmin() || hasProjectAccess(resource.data.id);
+      allow write: if isAdmin();
+    }
+
+    match /shared/default/workLogs/{workLogId} {
+      allow read: if isAdmin() || hasProjectAccess(resource.data.projectId);
+      allow write: if isAdmin();
+    }
+
+    match /shared/default/meta/{metaDoc} {
+      // CUSTOMER darf meta-Dokumente lesen; Filterung nach Projekt erfolgt im App-Code.
+      allow read: if isAdmin() || isCustomer();
+      allow write: if isAdmin();
+    }
+
+    // Standard: alles andere gesperrt.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
