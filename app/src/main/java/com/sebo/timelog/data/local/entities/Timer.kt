@@ -23,7 +23,7 @@ data class Timer(
     val projectId: Long,
     val isRunning: Boolean = true,
     val startTime: Long,
-    val pausedDuration: Long = 0,
+    val pausedDuration: Long = 0,   // Gesamte akkumulierte Pausenzeit in ms
+    val pausedAt: Long? = null,     // Timestamp des letzten Pause-Starts (null = läuft)
     val description: String? = null
 )
-

@@ -48,12 +48,12 @@ class TimerViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val currentTimer: StateFlow<Timer?> = timerRepository.getAnyTimer()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var tickerJob: Job? = null
 
     init {
-        // Wiederherstellen eines laufenden Timers beim ViewModel-Start
+        // Wiederherstellen eines laufenden oder pausierten Timers beim ViewModel-Start
         viewModelScope.launch {
             timerRepository.getAnyTimer().collect { timer ->
                 if (timer != null) {
@@ -64,7 +64,17 @@ class TimerViewModel(
                         startTicker(timer.startTime, timer.pausedDuration)
                     } else {
                         _uiState.value = TimerUiState.Paused
-                        _elapsedMillis.value = System.currentTimeMillis() - timer.startTime - timer.pausedDuration
+                        // Eingefrorene Arbeitszeit zum Zeitpunkt der Pause wiederherstellen.
+                        // pausedAt ist der Timestamp, an dem pausiert wurde.
+                        // Ohne pausedAt (Altdaten) schätzen wir mit dem aktuellen Zeitpunkt –
+                        // das würde driften, daher nutzen wir jetzt immer pausedAt.
+                        val frozenElapsed = if (timer.pausedAt != null) {
+                            timer.pausedAt - timer.startTime - timer.pausedDuration
+                        } else {
+                            // Fallback für Altdaten vor Migration
+                            maxOf(0L, System.currentTimeMillis() - timer.startTime - timer.pausedDuration)
+                        }
+                        _elapsedMillis.value = frozenElapsed
                     }
                 } else {
                     if (_uiState.value != TimerUiState.Idle) {
@@ -112,13 +122,18 @@ class TimerViewModel(
     fun pauseTimer() {
         viewModelScope.launch {
             currentTimer.value?.let { timer ->
-                val elapsed = System.currentTimeMillis() - timer.startTime - timer.pausedDuration
+                val pauseTime = System.currentTimeMillis()
+                // Berechne die bisher geleistete Arbeitszeit
+                val frozenElapsed = pauseTime - timer.startTime - timer.pausedDuration
                 timerRepository.update(
                     timer.copy(
                         isRunning = false,
-                        pausedDuration = System.currentTimeMillis() - timer.startTime - elapsed
+                        pausedAt = pauseTime  // Zeitpunkt der Pause speichern
+                        // pausedDuration bleibt unverändert – wird erst beim Resume akkumuliert
                     )
                 )
+                // Sofort einfrieren, damit UI nicht weiterzählt
+                _elapsedMillis.value = maxOf(0L, frozenElapsed)
                 _uiState.value = TimerUiState.Paused
                 stopTicker()
             }
@@ -128,14 +143,15 @@ class TimerViewModel(
     fun resumeTimer() {
         viewModelScope.launch {
             currentTimer.value?.let { timer ->
-                // Berechne zusätzliche Pausenzeit
-                val currentElapsed = _elapsedMillis.value
-                val totalTimeFromStart = System.currentTimeMillis() - timer.startTime
-                val newPausedDuration = totalTimeFromStart - currentElapsed
+                val resumeTime = System.currentTimeMillis()
+                // Addiere die vergangene Pausenzeit zur Gesamtpausenzeit
+                val pauseStart = timer.pausedAt ?: resumeTime
+                val newPausedDuration = timer.pausedDuration + (resumeTime - pauseStart)
 
                 timerRepository.update(
                     timer.copy(
                         isRunning = true,
+                        pausedAt = null,           // Pause beendet
                         pausedDuration = newPausedDuration
                     )
                 )
@@ -220,4 +236,3 @@ class TimerViewModel(
         }
     }
 }
-
