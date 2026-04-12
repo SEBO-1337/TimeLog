@@ -1,0 +1,70 @@
+<resources>
+    <string name="app_name">TimeLog</string>
+
+    <!-- Navigation -->
+    <string name="nav_timer">Timer</string>
+    <string name="nav_projects">Projekte</string>
+    <string name="nav_history">Verlauf</string>
+    <string name="nav_statistics">Statistiken</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Timer -->
+    <string name="timer_start">Timer starten</string>
+    <string name="timer_pause">Pausieren</string>
+    <string name="timer_resume">Fortsetzen</string>
+    <string name="timer_stop">Stoppen</string>
+    <string name="timer_discard">Verwerfen</string>
+    <string name="timer_select_project">Projekt auswählen</string>
+    <string name="timer_description_hint">Beschreibung (optional)</string>
+    <string name="timer_paused">⏸ Pausiert</string>
+    <string name="timer_no_project_error">Bitte wähle ein Projekt aus</string>
+
+    <!-- Projects -->
+    <string name="projects_title">Projekte</string>
+    <string name="projects_new">Neues Projekt</string>
+    <string name="projects_edit">Projekt bearbeiten</string>
+    <string name="projects_empty">Noch keine Projekte.\nErstelle dein erstes Projekt!</string>
+    <string name="project_name">Projektname</string>
+    <string name="project_description">Beschreibung</string>
+    <string name="project_hourly_rate">Stundensatz (€)</string>
+    <string name="project_color">Farbe</string>
+    <string name="project_status_active">Aktiv</string>
+    <string name="project_status_paused">Pausiert</string>
+    <string name="project_status_archived">Archiviert</string>
+
+    <!-- History -->
+    <string name="history_title">Verlauf</string>
+    <string name="history_empty">Noch keine Zeiteinträge vorhanden.</string>
+    <string name="history_filter_all">Alle</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">Statistiken</string>
+    <string name="stats_total_overview">Gesamt-Übersicht</string>
+    <string name="stats_hours">Stunden</string>
+    <string name="stats_entries">Einträge</string>
+    <string name="stats_revenue">Umsatz</string>
+    <string name="stats_per_project">Pro Projekt</string>
+    <string name="stats_empty">Noch keine Statistiken.\nStarte den Timer um Daten zu sammeln!</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_design">Design</string>
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_data">Datenmanagement</string>
+    <string name="settings_about">Über</string>
+    <string name="settings_version">Version 1.0</string>
+
+    <!-- Dialoge -->
+    <string name="dialog_save">Speichern</string>
+    <string name="dialog_cancel">Abbrechen</string>
+    <string name="dialog_delete">Löschen</string>
+    <string name="dialog_delete_project_title">Projekt löschen</string>
+    <string name="dialog_delete_project_message">Möchtest du \"%1$s\" wirklich löschen?\nAlle zugehörigen Zeiteinträge werden ebenfalls gelöscht.</string>
+    <string name="dialog_delete_worklog_title">Eintrag löschen</string>
+    <string name="dialog_delete_worklog_message">Möchtest du diesen Zeiteintrag wirklich löschen?</string>
+
+    <!-- Allgemein -->
+    <string name="back">Zurück</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="error_generic">Ein Fehler ist aufgetreten</string>
+</resources>
