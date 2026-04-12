@@ -56,3 +56,8 @@ object DetailRoutes {
     fun projectDetail(projectId: Long) = "project_detail/$projectId"
 }
 
+object AuthRoutes {
+    const val LOGIN = "auth_login"
+    const val REGISTER = "auth_register"
+}
+

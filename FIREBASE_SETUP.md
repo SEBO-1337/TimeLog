@@ -44,3 +44,11 @@ firebase use <dein-projekt-id>
 firebase deploy --only firestore:rules
 ```
 
+## 6) Firebase Auth aktivieren (Login/Registrierung)
+
+1. Firebase Console -> Build -> Authentication -> "Get started".
+2. Unter "Sign-in method" den Provider "E-Mail/Passwort" aktivieren.
+3. App starten: Bei ausgeloggtem Zustand erscheinen Login/Registrierung automatisch.
+
+Hinweis: Die App hat jetzt eigene Screens fuer Login und Registrierung integriert.
+

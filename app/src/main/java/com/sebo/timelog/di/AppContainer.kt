@@ -2,6 +2,7 @@ package com.sebo.timelog.di
 
 import android.content.Context
 import com.sebo.timelog.data.local.database.TimeLogDatabase
+import com.sebo.timelog.data.remote.AuthService
 import com.sebo.timelog.data.remote.SyncService
 import com.sebo.timelog.data.remote.SyncStatus
 import com.sebo.timelog.data.repositories.ProjectRepository
@@ -20,6 +21,8 @@ class AppContainer(context: Context) {
 
     private val database        = TimeLogDatabase.getInstance(context)
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    val authService: AuthService? = AuthService.create()
 
     /** null, wenn Firebase nicht konfiguriert ist (z. B. ohne google-services.json). */
     val syncService: SyncService? = SyncService.create(context)

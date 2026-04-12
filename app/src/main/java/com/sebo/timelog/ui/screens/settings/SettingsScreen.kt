@@ -33,6 +33,7 @@ import java.text.DateFormat
 
 @Composable
 fun SettingsScreen(
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -105,6 +106,13 @@ fun SettingsScreen(
                 title = "TimeLog",
                 subtitle = "Version 1.0",
                 onClick = { }
+            )
+
+            SettingsItem(
+                icon = { Icon(Icons.Default.CloudOff, contentDescription = null) },
+                title = "Abmelden",
+                subtitle = "Firebase Konto trennen",
+                onClick = onLogout
             )
         }
     }

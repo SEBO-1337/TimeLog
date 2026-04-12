@@ -5,8 +5,6 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-import java.util.Properties
-
 android {
     namespace = "com.sebo.timelog"
     compileSdk {
@@ -24,15 +22,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Server-URL explizit aus local.properties lesen (findProperty sieht diese Datei nicht immer)
-        val localProps = Properties().apply {
-            val file = rootProject.file("local.properties")
-            if (file.exists()) {
-                file.inputStream().use { load(it) }
-            }
-        }
-        val serverUrl = localProps.getProperty("timelog.server.url", "")
-        buildConfigField("String", "TIMELOG_SERVER_URL", "\"$serverUrl\"")
     }
 
     buildTypes {
@@ -92,6 +81,7 @@ dependencies {
     // Firebase (Cloud Sync)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
 
     // Material Icons Extended
