@@ -18,6 +18,9 @@ interface WorkLogDao {
     @Query("SELECT * FROM work_logs WHERE projectId = :projectId ORDER BY date DESC")
     fun getWorkLogsByProject(projectId: Long): Flow<List<WorkLog>>
 
+    @Query("SELECT * FROM work_logs WHERE projectId = :projectId ORDER BY date DESC")
+    suspend fun getWorkLogsByProjectOnce(projectId: Long): List<WorkLog>
+
     @Query("SELECT * FROM work_logs WHERE date BETWEEN :startDate AND :endDate ORDER BY date DESC")
     fun getWorkLogsByDateRange(startDate: Long, endDate: Long): Flow<List<WorkLog>>
 

@@ -6,10 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.sebo.timelog.data.local.entities.Project
 import com.sebo.timelog.data.local.entities.ProjectStatus
 import com.sebo.timelog.data.repositories.ProjectRepository
+import com.sebo.timelog.data.repositories.WorkLogRepository
+import com.sebo.timelog.utils.effectiveBilledHours
+import com.sebo.timelog.utils.pendingHours
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -19,12 +23,41 @@ sealed class ProjectsUiState {
     data class Error(val message: String) : ProjectsUiState()
 }
 
+data class ProjectBillingSummary(
+    val totalHours: Double = 0.0,
+    val billedHours: Double = 0.0,
+    val pendingHours: Double = 0.0,
+    val workLogCount: Int = 0,
+    val openAmount: Double = 0.0
+)
+
 class ProjectsViewModel(
-    private val projectRepository: ProjectRepository
+    private val projectRepository: ProjectRepository,
+    private val workLogRepository: WorkLogRepository
 ) : ViewModel() {
 
     val projects: StateFlow<List<Project>> = projectRepository.getAllProjects()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val projectBillingSummaries: StateFlow<Map<Long, ProjectBillingSummary>> = combine(
+        projectRepository.getAllProjects(),
+        workLogRepository.getAllWorkLogs()
+    ) { projects, workLogs ->
+        projects.associate { project ->
+            val projectLogs = workLogs.filter { it.projectId == project.id }
+            val totalHours = projectLogs.sumOf { it.hoursWorked }
+            val billedHours = projectLogs.sumOf { it.effectiveBilledHours() }
+            val pendingHours = projectLogs.sumOf { it.pendingHours() }
+
+            project.id to ProjectBillingSummary(
+                totalHours = totalHours,
+                billedHours = billedHours,
+                pendingHours = pendingHours,
+                workLogCount = projectLogs.size,
+                openAmount = pendingHours * project.hourlyRate
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _uiState = MutableStateFlow<ProjectsUiState>(ProjectsUiState.Loading)
     val uiState: StateFlow<ProjectsUiState> = _uiState.asStateFlow()
@@ -84,12 +117,25 @@ class ProjectsViewModel(
         }
     }
 
+    fun markProjectPendingAsBilled(projectId: Long) {
+        viewModelScope.launch {
+            try {
+                workLogRepository.markProjectPendingAsBilled(projectId)
+            } catch (e: Exception) {
+                _uiState.value = ProjectsUiState.Error("Fehler beim Abrechnen: ${e.message}")
+            }
+        }
+    }
+
     companion object {
-        fun factory(projectRepository: ProjectRepository): ViewModelProvider.Factory {
+        fun factory(
+            projectRepository: ProjectRepository,
+            workLogRepository: WorkLogRepository
+        ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ProjectsViewModel(projectRepository) as T
+                    return ProjectsViewModel(projectRepository, workLogRepository) as T
                 }
             }
         }

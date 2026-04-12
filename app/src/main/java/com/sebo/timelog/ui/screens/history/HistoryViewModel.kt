@@ -57,6 +57,18 @@ class HistoryViewModel(
         }
     }
 
+    fun addBilledHours(workLog: WorkLog, additionalHours: Double) {
+        viewModelScope.launch {
+            workLogRepository.addBilledHours(workLog, additionalHours)
+        }
+    }
+
+    fun markWorkLogAsBilled(workLog: WorkLog) {
+        viewModelScope.launch {
+            workLogRepository.markAsFullyBilled(workLog)
+        }
+    }
+
     companion object {
         fun factory(
             workLogRepository: WorkLogRepository,

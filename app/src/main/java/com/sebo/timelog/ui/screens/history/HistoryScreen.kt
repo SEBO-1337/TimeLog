@@ -23,11 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sebo.timelog.data.local.entities.WorkLog
+import com.sebo.timelog.ui.components.BillingHoursDialog
 import com.sebo.timelog.ui.components.ConfirmDeleteDialog
+import com.sebo.timelog.ui.components.ConfirmDialog
 import com.sebo.timelog.ui.components.EmptyState
 import com.sebo.timelog.ui.components.LoadingIndicator
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
 import com.sebo.timelog.ui.screens.history.components.WorkLogItem
+import com.sebo.timelog.utils.effectiveBilledHours
+import com.sebo.timelog.utils.pendingHours
+import com.sebo.timelog.utils.toFormattedHours
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -37,6 +42,8 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var workLogToDelete by remember { mutableStateOf<WorkLog?>(null) }
+    var workLogToBillPartially by remember { mutableStateOf<WorkLog?>(null) }
+    var workLogToBillFully by remember { mutableStateOf<WorkLog?>(null) }
 
     Scaffold(
         topBar = {
@@ -97,6 +104,8 @@ fun HistoryScreen(
                             WorkLogItem(
                                 workLog = workLog,
                                 project = uiState.projects[workLog.projectId],
+                                onPartialBilling = { workLogToBillPartially = workLog },
+                                onMarkAsBilled = { workLogToBillFully = workLog },
                                 onDelete = { workLogToDelete = workLog }
                             )
                         }
@@ -116,6 +125,33 @@ fun HistoryScreen(
                 workLogToDelete = null
             },
             onDismiss = { workLogToDelete = null }
+        )
+    }
+
+    workLogToBillPartially?.let { workLog ->
+        val pendingHours = workLog.pendingHours()
+        BillingHoursDialog(
+            title = "Stunden abrechnen",
+            message = "Bereits abgerechnet: ${workLog.effectiveBilledHours().toFormattedHours()}\nOffen: ${pendingHours.toFormattedHours()}",
+            initialHours = if (pendingHours > 0.0) pendingHours.toString() else "",
+            onConfirm = { additionalHours ->
+                viewModel.addBilledHours(workLog, additionalHours)
+                workLogToBillPartially = null
+            },
+            onDismiss = { workLogToBillPartially = null }
+        )
+    }
+
+    workLogToBillFully?.let { workLog ->
+        ConfirmDialog(
+            title = "Komplett abrechnen",
+            message = "Möchtest du die offenen ${workLog.pendingHours().toFormattedHours()} für diesen Eintrag vollständig abrechnen?",
+            confirmText = "Abrechnen",
+            onConfirm = {
+                viewModel.markWorkLogAsBilled(workLog)
+                workLogToBillFully = null
+            },
+            onDismiss = { workLogToBillFully = null }
         )
     }
 }

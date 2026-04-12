@@ -51,7 +51,10 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val projectsViewModel: ProjectsViewModel = viewModel(
-        factory = ProjectsViewModel.factory(container.projectRepository)
+        factory = ProjectsViewModel.factory(
+            container.projectRepository,
+            container.workLogRepository
+        )
     )
 
     val timerViewModel: TimerViewModel = viewModel(
@@ -135,7 +138,10 @@ private fun AppContentNavHost(
     val container = context.appContainer
 
     val projectsViewModel: ProjectsViewModel = viewModel(
-        factory = ProjectsViewModel.factory(container.projectRepository)
+        factory = ProjectsViewModel.factory(
+            container.projectRepository,
+            container.workLogRepository
+        )
     )
 
     val timerViewModel: TimerViewModel = viewModel(

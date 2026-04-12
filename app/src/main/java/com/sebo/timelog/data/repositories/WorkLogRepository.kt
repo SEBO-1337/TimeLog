@@ -3,6 +3,9 @@ package com.sebo.timelog.data.repositories
 import com.sebo.timelog.data.local.dao.WorkLogDao
 import com.sebo.timelog.data.local.entities.WorkLog
 import com.sebo.timelog.data.remote.SyncService
+import com.sebo.timelog.utils.effectiveBilledHours
+import com.sebo.timelog.utils.pendingHours
+import com.sebo.timelog.utils.withBilledHours
 import kotlinx.coroutines.flow.Flow
 
 class WorkLogRepository(
@@ -58,6 +61,25 @@ class WorkLogRepository(
         val updated = workLog.copy(updatedAt = System.currentTimeMillis())
         workLogDao.update(updated)
         syncService?.syncWorkLog(updated)
+    }
+
+    suspend fun updateBilling(workLog: WorkLog, totalBilledHours: Double) {
+        update(workLog.withBilledHours(totalBilledHours))
+    }
+
+    suspend fun addBilledHours(workLog: WorkLog, additionalBilledHours: Double) {
+        val totalBilledHours = workLog.effectiveBilledHours() + additionalBilledHours.coerceAtLeast(0.0)
+        updateBilling(workLog, totalBilledHours)
+    }
+
+    suspend fun markAsFullyBilled(workLog: WorkLog) {
+        updateBilling(workLog, workLog.hoursWorked)
+    }
+
+    suspend fun markProjectPendingAsBilled(projectId: Long) {
+        workLogDao.getWorkLogsByProjectOnce(projectId)
+            .filter { it.pendingHours() > 0.0001 }
+            .forEach { markAsFullyBilled(it) }
     }
 
     suspend fun delete(workLog: WorkLog) {
