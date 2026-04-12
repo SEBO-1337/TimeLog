@@ -1,22 +1,24 @@
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
-  --primary:       #2196F3;
-  --primary-dark:  #1565C0;
-  --primary-light: #64B5F6;
-  --bg:            #0f172a;
-  --surface:       #1e293b;
-  --surface2:      #273549;
-  --text:          #f1f5f9;
-  --muted:         #94a3b8;
-  --border:        rgba(255,255,255,0.09);
+  --primary:       #7c3aed;
+  --primary-dark:  #5b21b6;
+  --primary-light: #a78bfa;
+  --bg:            #0b1020;
+  --bg-2:          #121a2f;
+  --surface:       rgba(255,255,255,0.06);
+  --surface2:      rgba(255,255,255,0.1);
+  --surface3:      #1a2340;
+  --text:          #eef2ff;
+  --muted:         #a5b4d8;
+  --border:        rgba(255,255,255,0.14);
   --success:       #22c55e;
   --warning:       #f59e0b;
   --error:         #ef4444;
-  --radius:        16px;
-  --radius-sm:     10px;
-  --shadow:        0 4px 24px rgba(0,0,0,.35);
-  --nav-h:         68px;
-  --hdr-h:         56px;
+  --radius:        18px;
+  --radius-sm:     12px;
+  --shadow:        0 10px 35px rgba(0,0,0,.35);
+  --nav-h:         72px;
+  --hdr-h:         60px;
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -24,7 +26,11 @@
 html, body {
   height: 100%; overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg); color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(124,58,237,.25), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(59,130,246,.18), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -32,10 +38,13 @@ html, body {
 .app-header {
   position: fixed; inset: 0 0 auto 0;
   height: var(--hdr-h);
-  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  background: rgba(17, 24, 39, .7);
+  border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 18px; z-index: 200;
-  box-shadow: 0 2px 16px rgba(21,101,192,.4);
+  box-shadow: 0 6px 24px rgba(0,0,0,.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   /* Safe area für iPhone-Notch */
   padding-top: env(safe-area-inset-top);
   height: calc(var(--hdr-h) + env(safe-area-inset-top));
@@ -46,7 +55,7 @@ html, body {
 .header-right { display: flex; align-items: center; gap: 12px; }
 .header-user {
   font-size: 12px;
-  color: rgba(255,255,255,.85);
+  color: rgba(255,255,255,.78);
   max-width: 120px;
   white-space: nowrap;
   overflow: hidden;
@@ -54,12 +63,13 @@ html, body {
 }
 .header-clock { font-size: 14px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
 .refresh-btn  {
-  background: rgba(255,255,255,.2); border: none; color: #fff;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); color: #fff;
   width: 32px; height: 32px; border-radius: 50%;
   font-size: 18px; cursor: pointer; line-height: 1;
-  transition: background .2s, transform .3s;
+  transition: background .2s, transform .3s, border-color .2s;
 }
-.refresh-btn:active { background: rgba(255,255,255,.35); }
+.refresh-btn:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.32); }
+.refresh-btn:active { background: rgba(255,255,255,.28); }
 .refresh-btn.spinning { animation: spin .8s linear infinite; }
 
 /* ── Scroll-Bereich ──────────────────────────────────────────── */
@@ -84,10 +94,11 @@ html, body {
 
 /* ── Timer-Card ──────────────────────────────────────────────── */
 .timer-card {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, rgba(91,33,182,.92) 0%, rgba(59,130,246,.88) 100%);
   border-radius: var(--radius); padding: 20px 20px 18px;
   margin-bottom: 14px; position: relative; overflow: hidden;
-  box-shadow: 0 8px 32px rgba(33,150,243,.35);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 36px rgba(40,20,100,.42);
 }
 .timer-card::after {
   content: '';
@@ -129,10 +140,12 @@ html, body {
 .stat-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 14px; text-align: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .stat-val {
   font-size: 22px; font-weight: 700;
-  color: var(--primary-light); font-variant-numeric: tabular-nums;
+  color: #c4b5fd; font-variant-numeric: tabular-nums;
 }
 .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
@@ -151,10 +164,12 @@ html, body {
   border-radius: var(--radius-sm); padding: 13px 14px;
   display: grid; grid-template-columns: 4px 1fr auto;
   gap: 12px; align-items: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .log-bar { border-radius: 2px; align-self: stretch; min-height: 40px; }
 .log-info { overflow: hidden; }
-.log-project { font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 2px; }
+.log-project { font-size: 11px; font-weight: 700; color: #c4b5fd; margin-bottom: 2px; }
 .log-desc    { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-desc.no-desc { color: var(--muted); font-style: italic; font-weight: 400; }
 .log-meta    { font-size: 11px; color: var(--muted); margin-top: 3px; }
@@ -170,6 +185,8 @@ html, body {
 .project-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .project-header { display: flex; align-items: center; gap: 12px; }
 .project-avatar {
@@ -193,10 +210,10 @@ html, body {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
 .p-num {
-  background: var(--bg); border-radius: 8px;
+  background: rgba(9,13,28,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 10px;
   padding: 10px; text-align: center;
 }
-.p-num-val { font-size: 18px; font-weight: 700; color: var(--primary-light); font-variant-numeric: tabular-nums; }
+.p-num-val { font-size: 18px; font-weight: 700; color: #c4b5fd; font-variant-numeric: tabular-nums; }
 .p-num-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
 /* ── Verlauf-Filter ──────────────────────────────────────────── */
@@ -205,18 +222,23 @@ html, body {
   margin-bottom: 14px;
 }
 .filter-input {
-  background: var(--surface); border: 1px solid var(--border);
+  background: rgba(9,13,28,.55); border: 1px solid rgba(255,255,255,.16);
   color: var(--text); border-radius: var(--radius-sm);
   padding: 10px 12px; font-size: 14px;
   width: 100%; appearance: none; -webkit-appearance: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.filter-input:focus { outline: none; border-color: var(--primary); }
+.filter-input:focus {
+  outline: none;
+  border-color: rgba(167,139,250,.95);
+  box-shadow: 0 0 0 3px rgba(167,139,250,.22);
+}
 
 /* ── Bottom Navigation ───────────────────────────────────────── */
 .bottom-nav {
   position: fixed; inset: auto 0 0 0;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-  background: var(--surface); border-top: 1px solid var(--border);
+  background: rgba(12,18,36,.75); border-top: 1px solid var(--border);
   display: flex; align-items: flex-start; padding-top: 8px;
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 200;
@@ -227,9 +249,10 @@ html, body {
   flex: 1; background: none; border: none;
   color: var(--muted); display: flex; flex-direction: column;
   align-items: center; gap: 3px; padding: 6px 4px;
-  cursor: pointer; transition: color .15s;
+  cursor: pointer; transition: color .15s, transform .15s;
 }
-.nav-btn.active { color: var(--primary); }
+.nav-btn.active { color: #c4b5fd; }
+.nav-btn.active .nav-icon { transform: translateY(-1px); }
 .nav-icon { font-size: 22px; }
 .nav-lbl  { font-size: 11px; font-weight: 500; }
 
@@ -264,6 +287,8 @@ html, body {
   border-radius: var(--radius);
   padding: 22px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .auth-card h1 {
@@ -285,24 +310,33 @@ html, body {
 
 .auth-input {
   width: 100%;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(9,13,28,.55);
   color: var(--text);
   border-radius: var(--radius-sm);
   padding: 11px 12px;
   font-size: 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(167,139,250,.95);
+  box-shadow: 0 0 0 3px rgba(167,139,250,.22);
 }
 
 .auth-btn {
   border: none;
   border-radius: var(--radius-sm);
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   color: #fff;
   padding: 11px 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform .15s, filter .2s;
 }
+.auth-btn:hover { filter: brightness(1.08); }
+.auth-btn:active { transform: translateY(1px); }
 
 .auth-link-btn {
   margin-top: 10px;
@@ -344,8 +378,8 @@ html, body {
 }
 
 .admin-role-select {
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(9,13,28,.55);
   color: var(--text);
   border-radius: 8px;
   padding: 8px;
@@ -353,8 +387,8 @@ html, body {
 
 .admin-projects-input {
   width: 100%;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(9,13,28,.55);
   color: var(--text);
   border-radius: 8px;
   padding: 10px;
@@ -362,12 +396,15 @@ html, body {
 
 .admin-save-btn {
   border: none;
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   color: #fff;
   border-radius: 8px;
   padding: 9px 12px;
   cursor: pointer;
+  transition: transform .15s, filter .2s;
 }
+.admin-save-btn:hover { filter: brightness(1.08); }
+.admin-save-btn:active { transform: translateY(1px); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
