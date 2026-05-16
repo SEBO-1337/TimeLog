@@ -1,6 +1,6 @@
 {
   "name": "timelog",
-  "version": "1.0.0",
+  "version": "1.33.1",
   "description": "TimeLog Web-Dashboard – Echtzeit-Sync zwischen Android und Browser",
   "main": "backend/server.js",
   "scripts": {
