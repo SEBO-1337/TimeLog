@@ -1,5 +1,8 @@
 # Firebase App Hosting – Konfiguration
-# Verweist auf das backend/-Unterverzeichnis, wo package.json liegt.
-rootDir: backend
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  maxInstances: 2
+  minInstances: 0
 
 
