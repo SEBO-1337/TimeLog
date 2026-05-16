@@ -3,8 +3,10 @@ package com.sebo.timelog.ui.screens.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.sebo.timelog.data.local.entities.BillableStatus
 import com.sebo.timelog.data.local.entities.Project
 import com.sebo.timelog.data.local.entities.WorkLog
+import com.sebo.timelog.ui.components.ManualWorkLogInput
 import com.sebo.timelog.data.repositories.ProjectRepository
 import com.sebo.timelog.data.repositories.WorkLogRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +68,21 @@ class HistoryViewModel(
     fun markWorkLogAsBilled(workLog: WorkLog) {
         viewModelScope.launch {
             workLogRepository.markAsFullyBilled(workLog)
+        }
+    }
+
+    fun addManualWorkLog(input: ManualWorkLogInput) {
+        viewModelScope.launch {
+            workLogRepository.insert(
+                WorkLog(
+                    projectId = input.projectId,
+                    hoursWorked = input.hoursWorked,
+                    date = input.date,
+                    description = input.description,
+                    notes = input.notes.ifBlank { null },
+                    billableStatus = BillableStatus.UNBILLED
+                )
+            )
         }
     }
 

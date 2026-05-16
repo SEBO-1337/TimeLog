@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sebo.timelog.data.local.entities.WorkLog
+import com.sebo.timelog.ui.components.AddWorkLogDialog
 import com.sebo.timelog.ui.components.BillingHoursDialog
 import com.sebo.timelog.ui.components.ConfirmDeleteDialog
 import com.sebo.timelog.ui.components.ConfirmDialog
@@ -44,10 +49,16 @@ fun HistoryScreen(
     var workLogToDelete by remember { mutableStateOf<WorkLog?>(null) }
     var workLogToBillPartially by remember { mutableStateOf<WorkLog?>(null) }
     var workLogToBillFully by remember { mutableStateOf<WorkLog?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TimeLogTopAppBar(title = "Verlauf")
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Eintrag hinzufügen")
+            }
         },
         modifier = modifier
     ) { paddingValues ->
@@ -152,6 +163,17 @@ fun HistoryScreen(
                 workLogToBillFully = null
             },
             onDismiss = { workLogToBillFully = null }
+        )
+    }
+
+    if (showAddDialog && uiState.projects.isNotEmpty()) {
+        AddWorkLogDialog(
+            projects = uiState.projects.values.toList(),
+            onConfirm = { input ->
+                viewModel.addManualWorkLog(input)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false }
         )
     }
 }

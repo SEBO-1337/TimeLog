@@ -1,6 +1,14 @@
 package com.sebo.timelog.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -9,6 +17,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import com.sebo.timelog.data.local.entities.Project
+import com.sebo.timelog.utils.DateUtils
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun ConfirmDeleteDialog(
@@ -105,3 +124,144 @@ fun BillingHoursDialog(
     )
 }
 
+
+data class ManualWorkLogInput(
+    val projectId: Long,
+    val hoursWorked: Double,
+    val date: Long,
+    val description: String,
+    val notes: String
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddWorkLogDialog(
+    projects: List<Project>,
+    onConfirm: (ManualWorkLogInput) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedProject by remember { mutableStateOf(projects.firstOrNull()) }
+    var projectDropdownExpanded by remember { mutableStateOf(false) }
+    var hoursInput by remember { mutableStateOf("") }
+    var dateInput by remember { mutableStateOf(DateUtils.formatDate(System.currentTimeMillis())) }
+    var description by remember { mutableStateOf(TextFieldValue("")) }
+    var notes by remember { mutableStateOf("") }
+
+    val parsedHours = hoursInput.replace(',', '.').toDoubleOrNull()
+    val parsedDate = runCatching {
+        SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).parse(dateInput.trim())?.time
+    }.getOrNull()
+    val isValid = selectedProject != null && parsedHours != null && parsedHours > 0.0 && parsedDate != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Eintrag manuell hinzufügen") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = projectDropdownExpanded,
+                    onExpandedChange = { projectDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedProject?.name ?: "Projekt wählen",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Projekt") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = projectDropdownExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = projectDropdownExpanded,
+                        onDismissRequest = { projectDropdownExpanded = false }
+                    ) {
+                        projects.forEach { project ->
+                            DropdownMenuItem(
+                                text = { Text(project.name) },
+                                onClick = {
+                                    selectedProject = project
+                                    projectDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = dateInput,
+                    onValueChange = { dateInput = it },
+                    label = { Text("Datum") },
+                    singleLine = true,
+                    supportingText = { Text("Format: TT.MM.JJJJ") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = hoursInput,
+                    onValueChange = { hoursInput = it },
+                    label = { Text("Stunden") },
+                    singleLine = true,
+                    supportingText = { Text("Beispiel: 2,5") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { newValue ->
+                        val oldText = description.text
+                        val newText = newValue.text
+                        // Prüfen ob ein Zeilenumbruch hinzugefügt wurde
+                        if (newText.length > oldText.length) {
+                            val insertPos = newValue.selection.start
+                            val inserted = newText.substring(oldText.length.coerceAtMost(insertPos - 1), insertPos)
+                            if (inserted.contains("\n")) {
+                                val withPrefix = newText.substring(0, insertPos) + "- " + newText.substring(insertPos)
+                                val newCursor = insertPos + 2
+                                description = TextFieldValue(withPrefix, TextRange(newCursor))
+                                return@OutlinedTextField
+                            }
+                        }
+                        description = newValue
+                    },
+                    label = { Text("Beschreibung (optional)") },
+                    minLines = 3,
+                    maxLines = 6,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Default
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notizen (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (isValid) {
+                        onConfirm(
+                            ManualWorkLogInput(
+                                projectId = selectedProject!!.id,
+                                hoursWorked = parsedHours!!,
+                                date = parsedDate!!,
+                                description = description.text,
+                                notes = notes
+                            )
+                        )
+                    }
+                },
+                enabled = isValid
+            ) {
+                Text("Hinzufügen")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
