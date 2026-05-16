@@ -1,0 +1,5 @@
+# Firebase App Hosting – Konfiguration
+# Verweist auf das backend/-Unterverzeichnis, wo package.json liegt.
+rootDir: backend
+
+
