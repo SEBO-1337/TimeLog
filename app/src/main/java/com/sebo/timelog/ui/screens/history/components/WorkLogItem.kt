@@ -91,7 +91,8 @@ fun WorkLogItem(
                         Text(
                             text = workLog.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            softWrap = true
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
