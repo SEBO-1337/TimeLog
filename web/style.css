@@ -381,6 +381,9 @@ html, body {
   border: none;
   color: var(--primary-light);
   cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 
 .auth-error {

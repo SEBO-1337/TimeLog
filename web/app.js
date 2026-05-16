@@ -492,6 +492,21 @@ function bindAuthUi() {
     setAuthMode(state.authMode === 'login' ? 'register' : 'login');
   });
 
+  document.getElementById('forgot-password-btn').addEventListener('click', async () => {
+    setAuthError('');
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) {
+      setAuthError('Bitte zuerst die E-Mail-Adresse eingeben.');
+      return;
+    }
+    try {
+      await auth.sendPasswordResetEmail(email);
+      setAuthError('✅ Reset-E-Mail wurde gesendet. Bitte prüfe dein Postfach.');
+    } catch (err) {
+      setAuthError(err?.message || 'Fehler beim Senden der Reset-E-Mail.');
+    }
+  });
+
   document.getElementById('logout-btn').addEventListener('click', async () => auth.signOut());
   document.getElementById('pending-logout-btn').addEventListener('click', async () => auth.signOut());
 }
