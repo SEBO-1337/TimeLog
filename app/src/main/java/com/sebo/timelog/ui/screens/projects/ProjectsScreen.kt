@@ -30,9 +30,9 @@ import com.sebo.timelog.ui.screens.projects.components.ProjectList
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen(
+    modifier: Modifier = Modifier,
     viewModel: ProjectsViewModel,
     onProjectClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }

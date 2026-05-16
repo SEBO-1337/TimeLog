@@ -33,8 +33,8 @@ import java.text.DateFormat
 
 @Composable
 fun SettingsScreen(
-    onLogout: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val syncStatus by context.appContainer.syncStatus.collectAsState()
@@ -104,7 +104,7 @@ fun SettingsScreen(
             SettingsItem(
                 icon = { Icon(Icons.Default.Info, contentDescription = null) },
                 title = "TimeLog",
-                subtitle = "Version 1.0",
+                subtitle = "Version 1.33",
                 onClick = { }
             )
 
