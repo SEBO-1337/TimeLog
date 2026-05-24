@@ -68,7 +68,8 @@ import java.text.DateFormat
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onNavigateToDataManagement: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val syncStatus by context.appContainer.syncStatus.collectAsState()
@@ -235,7 +236,7 @@ fun SettingsScreen(
                 icon = { Icon(Icons.Default.Storage, contentDescription = null) },
                 title = "Datenmanagement",
                 subtitle = "Backup & Export",
-                onClick = { /* TODO: Export */ }
+                onClick = { onNavigateToDataManagement() }
             )
 
             HorizontalDivider()

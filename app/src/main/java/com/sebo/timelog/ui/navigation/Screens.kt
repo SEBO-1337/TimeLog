@@ -51,7 +51,8 @@ sealed class Screens(
 
 // Separate Routen für Detail-Screens (nicht in BottomNav)
 object DetailRoutes {
-    const val PROJECT_DETAIL = "project_detail/{projectId}"
+    const val PROJECT_DETAIL    = "project_detail/{projectId}"
+    const val DATA_MANAGEMENT   = "data_management"
 
     fun projectDetail(projectId: Long) = "project_detail/$projectId"
 }
