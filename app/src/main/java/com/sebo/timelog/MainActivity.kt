@@ -10,9 +10,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -22,7 +24,9 @@ import com.sebo.timelog.ui.navigation.AppNavigation
 import com.sebo.timelog.ui.navigation.AuthRoutes
 import com.sebo.timelog.ui.navigation.DetailRoutes
 import com.sebo.timelog.ui.navigation.Screens
+import com.sebo.timelog.ui.theme.ThemePreference
 import com.sebo.timelog.ui.theme.TimeLogTheme
+import com.sebo.timelog.utils.appContainer
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +57,15 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            TimeLogTheme {
+            val themePref by appContainer.themeStore.themePreference.collectAsState(
+                initial = ThemePreference.SYSTEM
+            )
+            val isDark = when (themePref) {
+                ThemePreference.LIGHT -> false
+                ThemePreference.DARK -> true
+                ThemePreference.SYSTEM -> isSystemInDarkTheme()
+            }
+            TimeLogTheme(darkTheme = isDark) {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route

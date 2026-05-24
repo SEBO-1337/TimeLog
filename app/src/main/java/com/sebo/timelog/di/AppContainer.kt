@@ -9,6 +9,7 @@ import com.sebo.timelog.data.remote.SyncStatus
 import com.sebo.timelog.data.repositories.ProjectRepository
 import com.sebo.timelog.data.repositories.TimerRepository
 import com.sebo.timelog.data.repositories.WorkLogRepository
+import com.sebo.timelog.ui.theme.ThemeStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +23,8 @@ class AppContainer(context: Context) {
 
     private val database        = TimeLogDatabase.getInstance(context)
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    val themeStore = ThemeStore(context)
 
     val authService: AuthService? = AuthService.create()
 
