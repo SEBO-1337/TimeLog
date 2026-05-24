@@ -46,79 +46,91 @@ class AppContainer(context: Context) {
     init {
         // Beim App-Start zuerst Cloud-Daten lokal herstellen und danach den Merge-Stand hochladen.
         if (syncService != null) {
-            applicationScope.launch {
-                try {
-                    val uid = authService?.currentUser()?.uid.orEmpty()
-                    val role = authService?.getUserRole() ?: UserRole.ADMIN
-                    val allowedProjectIds = authService?.getAllowedProjectIds() ?: emptyList()
+            applicationScope.launch { runFullSync() }
+        }
+    }
 
-                    val remoteProjects = syncService.fetchProjects(role, uid, allowedProjectIds)
-                    if (remoteProjects.isNotEmpty()) {
-                        remoteProjects.forEach { remoteProject ->
-                            val existing = database.projectDao().getProjectByCloudIdOnce(remoteProject.cloudId)
-                            if (existing == null) {
-                                database.projectDao().insert(remoteProject.copy(id = 0))
-                            } else {
-                                database.projectDao().update(
-                                    remoteProject.copy(
-                                        id = existing.id,
-                                        createdAt = existing.createdAt
-                                    )
-                                )
-                            }
-                        }
+    /**
+     * Führt einen vollständigen bidirektionalen Cloud-Sync durch.
+     * Kann manuell (z. B. aus dem Settings-Screen) aufgerufen werden.
+     */
+    fun triggerManualSync() {
+        if (syncService == null) return
+        applicationScope.launch { runFullSync() }
+    }
+
+    private suspend fun runFullSync() {
+        if (syncService == null) return
+        try {
+            val uid = authService?.currentUser()?.uid.orEmpty()
+            val role = authService?.getUserRole() ?: UserRole.ADMIN
+            val allowedProjectIds = authService?.getAllowedProjectIds() ?: emptyList()
+
+            val remoteProjects = syncService.fetchProjects(role, uid, allowedProjectIds)
+            if (remoteProjects.isNotEmpty()) {
+                remoteProjects.forEach { remoteProject ->
+                    val existing = database.projectDao().getProjectByCloudIdOnce(remoteProject.cloudId)
+                    if (existing == null) {
+                        database.projectDao().insert(remoteProject.copy(id = 0))
+                    } else {
+                        database.projectDao().update(
+                            remoteProject.copy(
+                                id = existing.id,
+                                createdAt = existing.createdAt
+                            )
+                        )
                     }
+                }
+            }
 
-                    val remoteWorkLogs = syncService.fetchWorkLogs(role, uid, allowedProjectIds)
-                    if (remoteWorkLogs.isNotEmpty()) {
-                        remoteWorkLogs.forEach { remoteLog ->
-                            try {
-                                val localProjectId = when {
-                                    !remoteLog.projectCloudId.isNullOrBlank() -> {
-                                        database.projectDao().getProjectByCloudIdOnce(remoteLog.projectCloudId)?.id
-                                    }
-                                    remoteLog.workLog.projectId > 0 -> {
-                                        database.projectDao().getProjectByIdOnce(remoteLog.workLog.projectId)?.id
-                                    }
-                                    else -> null
-                                }
-
-                                if (localProjectId != null) {
-                                    database.workLogDao().insert(
-                                        remoteLog.workLog.copy(projectId = localProjectId)
-                                    )
-                                }
-                            } catch (e: Exception) {
-                                android.util.Log.w("AppContainer", "WorkLog-Import uebersprungen (id=${remoteLog.workLog.id}): ${e.message}")
-                            }
-                        }
-                    }
-
-                    val remoteTimer = syncService.fetchActiveTimer()
-                    if (remoteTimer != null) {
+            val remoteWorkLogs = syncService.fetchWorkLogs(role, uid, allowedProjectIds)
+            if (remoteWorkLogs.isNotEmpty()) {
+                remoteWorkLogs.forEach { remoteLog ->
+                    try {
                         val localProjectId = when {
-                            !remoteTimer.projectCloudId.isNullOrBlank() -> {
-                                database.projectDao().getProjectByCloudIdOnce(remoteTimer.projectCloudId)?.id
+                            !remoteLog.projectCloudId.isNullOrBlank() -> {
+                                database.projectDao().getProjectByCloudIdOnce(remoteLog.projectCloudId)?.id
                             }
-                            remoteTimer.timer.projectId > 0 -> {
-                                database.projectDao().getProjectByIdOnce(remoteTimer.timer.projectId)?.id
+                            remoteLog.workLog.projectId > 0 -> {
+                                database.projectDao().getProjectByIdOnce(remoteLog.workLog.projectId)?.id
                             }
                             else -> null
                         }
-                        if (localProjectId != null) {
-                            database.timerDao().deleteAll()
-                            database.timerDao().insert(remoteTimer.timer.copy(projectId = localProjectId))
-                        }
-                    }
 
-                    val mergedProjects = projectRepository.getAllProjects().first()
-                    val mergedWorkLogs = workLogRepository.getAllWorkLogs().first()
-                    val mergedTimer = timerRepository.getAnyTimer().first()
-                    syncService.syncAll(mergedProjects, mergedWorkLogs, mergedTimer, uid)
-                } catch (e: Exception) {
-                    android.util.Log.w("AppContainer", "Initialer Sync fehlgeschlagen: ${e.message}")
+                        if (localProjectId != null) {
+                            database.workLogDao().insert(
+                                remoteLog.workLog.copy(projectId = localProjectId)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("AppContainer", "WorkLog-Import uebersprungen (id=${remoteLog.workLog.id}): ${e.message}")
+                    }
                 }
             }
+
+            val remoteTimer = syncService.fetchActiveTimer()
+            if (remoteTimer != null) {
+                val localProjectId = when {
+                    !remoteTimer.projectCloudId.isNullOrBlank() -> {
+                        database.projectDao().getProjectByCloudIdOnce(remoteTimer.projectCloudId)?.id
+                    }
+                    remoteTimer.timer.projectId > 0 -> {
+                        database.projectDao().getProjectByIdOnce(remoteTimer.timer.projectId)?.id
+                    }
+                    else -> null
+                }
+                if (localProjectId != null) {
+                    database.timerDao().deleteAll()
+                    database.timerDao().insert(remoteTimer.timer.copy(projectId = localProjectId))
+                }
+            }
+
+            val mergedProjects = projectRepository.getAllProjects().first()
+            val mergedWorkLogs = workLogRepository.getAllWorkLogs().first()
+            val mergedTimer = timerRepository.getAnyTimer().first()
+            syncService.syncAll(mergedProjects, mergedWorkLogs, mergedTimer, uid)
+        } catch (e: Exception) {
+            android.util.Log.w("AppContainer", "Sync fehlgeschlagen: ${e.message}")
         }
     }
 }
