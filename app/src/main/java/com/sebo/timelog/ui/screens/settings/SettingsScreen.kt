@@ -1,10 +1,16 @@
 package com.sebo.timelog.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
@@ -14,20 +20,35 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
+import com.sebo.timelog.BuildConfig
 import com.sebo.timelog.data.remote.SyncStatus
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
 import com.sebo.timelog.utils.appContainer
@@ -48,9 +69,65 @@ fun SettingsScreen(
     }
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    val updateViewModel: UpdateViewModel = viewModel()
+    val updateState by updateViewModel.state.collectAsState()
+
+    // Update-Dialog
+    when (val state = updateState) {
+        is UpdateUiState.UpdateAvailable -> {
+            UpdateAvailableDialog(
+                release = state.release,
+                onDownload = {
+                    val url = state.release.apkDownloadUrl ?: state.release.releasePage
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    updateViewModel.dismissResult()
+                },
+                onOpenReleasePage = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(state.release.releasePage)))
+                    updateViewModel.dismissResult()
+                },
+                onDismiss = { updateViewModel.dismissResult() }
+            )
+        }
+        is UpdateUiState.UpToDate -> {
+            AlertDialog(
+                onDismissRequest = { updateViewModel.dismissResult() },
+                icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null) },
+                title = { Text("Kein Update verfügbar") },
+                text = { Text("Du verwendest bereits die neueste Version (${BuildConfig.VERSION_NAME}).") },
+                confirmButton = {
+                    TextButton(onClick = { updateViewModel.dismissResult() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+        is UpdateUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { updateViewModel.dismissResult() },
+                title = { Text("Fehler") },
+                text = { Text(state.message) },
+                confirmButton = {
+                    TextButton(onClick = { updateViewModel.dismissResult() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+        else -> {}
+    }
+
     Scaffold(
         topBar = {
             TimeLogTopAppBar(title = "Einstellungen")
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
         },
         modifier = modifier
     ) { paddingValues ->
@@ -58,6 +135,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
         ) {
             // Darstellung
             SettingsSection(title = "Darstellung")
@@ -95,7 +173,22 @@ fun SettingsScreen(
                 },
                 title = "Cloud-Sync (Firebase)",
                 subtitle = syncStatusSubtitle(syncStatus, dateFormat),
-                onClick = { }
+                onClick = {
+                    if (!syncStatus.configured) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Firebase ist nicht konfiguriert")
+                        }
+                    } else if (syncStatus.isSyncing) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Synchronisierung läuft bereits...")
+                        }
+                    } else {
+                        context.appContainer.triggerManualSync()
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Cloud-Sync gestartet ☁️")
+                        }
+                    }
+                }
             )
 
             SettingsItem(
@@ -112,9 +205,42 @@ fun SettingsScreen(
             SettingsItem(
                 icon = { Icon(Icons.Default.Info, contentDescription = null) },
                 title = "TimeLog",
-                subtitle = "Version 1.33",
+                subtitle = "Version ${BuildConfig.VERSION_NAME}",
                 onClick = { }
             )
+            SettingsItem(
+                icon = {
+                    if (updateState is UpdateUiState.Checking) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .then(Modifier.height(24.dp)),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.SystemUpdate, contentDescription = null)
+                    }
+                },
+                title = "Nach Updates suchen",
+                subtitle = when (updateState) {
+                    is UpdateUiState.Checking -> "Wird geprüft..."
+                    is UpdateUiState.UpdateAvailable -> "Update verfügbar!"
+                    else -> "Auf Updates von GitHub prüfen"
+                },
+                onClick = { updateViewModel.checkForUpdates() }
+            )
+
+            // Banner wenn Update verfügbar
+            if (updateState is UpdateUiState.UpdateAvailable) {
+                val rel = (updateState as UpdateUiState.UpdateAvailable).release
+                UpdateBanner(
+                    newVersion = rel.version,
+                    onDownload = {
+                        val url = rel.apkDownloadUrl ?: rel.releasePage
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                )
+            }
 
             HorizontalDivider()
 
@@ -134,8 +260,79 @@ fun SettingsScreen(
                 onClick = onLogout,
                 titleColor = MaterialTheme.colorScheme.error
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun UpdateBanner(newVersion: String, onDownload: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "🎉 Update verfügbar: v$newVersion",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Eine neue Version ist auf GitHub verfügbar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = onDownload) {
+                Text("Jetzt herunterladen")
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateAvailableDialog(
+    release: com.sebo.timelog.utils.ReleaseInfo,
+    onDownload: () -> Unit,
+    onOpenReleasePage: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null) },
+        title = { Text("Update verfügbar: v${release.version}") },
+        text = {
+            Column {
+                Text(
+                    text = "Release-Notes:",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = release.releaseNotes.take(400).let {
+                        if (release.releaseNotes.length > 400) "$it…" else it
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDownload) {
+                Text(if (release.apkDownloadUrl != null) "APK herunterladen" else "Release öffnen")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onOpenReleasePage) {
+                Text("Release-Seite")
+            }
+        }
+    )
 }
 
 @Composable
@@ -183,4 +380,3 @@ private fun syncStatusSubtitle(status: SyncStatus, dateFormat: DateFormat): Stri
     }
     return "Noch keine Synchronisierung"
 }
-
