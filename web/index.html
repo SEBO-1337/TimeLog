@@ -113,6 +113,17 @@
       <div id="projects-container" class="projects-list">
         <div class="loading">Lade Projekte …</div>
       </div>
+
+      <!-- Projekt-Detail (Slide-In) -->
+      <div id="project-detail" class="project-detail hidden">
+        <div class="project-detail-header">
+          <button class="back-btn" onclick="closeProjectDetail()">← Zurück</button>
+          <span id="detail-title" class="detail-title"></span>
+        </div>
+        <div id="detail-info" class="detail-info-card"></div>
+        <h2 class="section-title" style="margin-top:18px;">Zeiteinträge</h2>
+        <div id="detail-logs" class="log-list"></div>
+      </div>
     </section>
 
     <!-- ── Verlauf ────────────────────────────── -->
@@ -171,6 +182,48 @@
     </button>
   </nav>
 
+  </div>
+
+  <!-- Edit WorkLog Modal -->
+  <div id="edit-modal-overlay" class="modal-overlay hidden" onclick="closeEditLogModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Eintrag bearbeiten</h3>
+        <button class="modal-close-btn" onclick="closeEditLogModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-log-id">
+        <div class="modal-field">
+          <label class="modal-label">Projekt</label>
+          <select id="edit-log-project" class="filter-input"></select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Datum</label>
+          <input type="date" id="edit-log-date" class="filter-input">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Stunden gearbeitet</label>
+          <input type="number" id="edit-log-hours" class="filter-input" step="0.25" min="0.25">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Beschreibung</label>
+          <textarea id="edit-log-desc" class="filter-input modal-textarea" rows="3"></textarea>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Abrechnungsstatus</label>
+          <select id="edit-log-status" class="filter-input">
+            <option value="UNBILLED">Offen</option>
+            <option value="PARTIAL">Teilweise abgerechnet</option>
+            <option value="BILLED">Abgerechnet</option>
+          </select>
+        </div>
+        <div id="edit-modal-error" class="modal-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn-secondary" onclick="closeEditLogModal()">Abbrechen</button>
+        <button class="modal-btn-primary" onclick="saveEditLog()">Speichern</button>
+      </div>
+    </div>
   </div>
 
   <script defer src="/__/firebase/11.10.0/firebase-app-compat.js"></script>

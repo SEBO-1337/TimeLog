@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,6 +45,7 @@ fun WorkLogItem(
     onPartialBilling: () -> Unit,
     onMarkAsBilled: () -> Unit,
     onDelete: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val billedHours = workLog.effectiveBilledHours()
@@ -124,6 +126,14 @@ fun WorkLogItem(
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Bearbeiten",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,

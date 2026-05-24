@@ -31,6 +31,7 @@ import com.sebo.timelog.ui.components.AddWorkLogDialog
 import com.sebo.timelog.ui.components.BillingHoursDialog
 import com.sebo.timelog.ui.components.ConfirmDeleteDialog
 import com.sebo.timelog.ui.components.ConfirmDialog
+import com.sebo.timelog.ui.components.EditWorkLogDialog
 import com.sebo.timelog.ui.components.EmptyState
 import com.sebo.timelog.ui.components.LoadingIndicator
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
@@ -49,6 +50,7 @@ fun HistoryScreen(
     var workLogToDelete by remember { mutableStateOf<WorkLog?>(null) }
     var workLogToBillPartially by remember { mutableStateOf<WorkLog?>(null) }
     var workLogToBillFully by remember { mutableStateOf<WorkLog?>(null) }
+    var workLogToEdit by remember { mutableStateOf<WorkLog?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -117,7 +119,8 @@ fun HistoryScreen(
                                 project = uiState.projects[workLog.projectId],
                                 onPartialBilling = { workLogToBillPartially = workLog },
                                 onMarkAsBilled = { workLogToBillFully = workLog },
-                                onDelete = { workLogToDelete = workLog }
+                                onDelete = { workLogToDelete = workLog },
+                                onEdit = { workLogToEdit = workLog }
                             )
                         }
                     }
@@ -175,6 +178,20 @@ fun HistoryScreen(
             },
             onDismiss = { showAddDialog = false }
         )
+    }
+
+    workLogToEdit?.let { workLog ->
+        if (uiState.projects.isNotEmpty()) {
+            EditWorkLogDialog(
+                workLog = workLog,
+                projects = uiState.projects.values.toList(),
+                onConfirm = { updated ->
+                    viewModel.updateWorkLog(updated)
+                    workLogToEdit = null
+                },
+                onDismiss = { workLogToEdit = null }
+            )
+        }
     }
 }
 

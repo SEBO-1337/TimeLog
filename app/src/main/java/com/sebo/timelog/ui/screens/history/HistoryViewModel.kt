@@ -72,6 +72,12 @@ class HistoryViewModel(
         }
     }
 
+    fun updateWorkLog(workLog: WorkLog) {
+        viewModelScope.launch {
+            workLogRepository.update(workLog)
+        }
+    }
+
     fun addManualWorkLog(input: ManualWorkLogInput) {
         viewModelScope.launch {
             workLogRepository.insert(

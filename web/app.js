@@ -124,7 +124,12 @@ function navigate(name, btn) {
   document.getElementById(`page-${name}`).classList.add('active');
   state.page = name;
 
-  if (name === 'projects') renderProjects();
+  if (name === 'projects') {
+    // Detailansicht schließen wenn zur Projektliste navigiert wird
+    document.getElementById('project-detail')?.classList.add('hidden');
+    document.getElementById('projects-container')?.classList.remove('hidden');
+    renderProjects();
+  }
   if (name === 'history') loadHistory();
   if (name === 'dashboard') renderDashboard();
   if (name === 'admin') loadAdminUsers();
@@ -178,15 +183,21 @@ function logHtml(log) {
   });
   const billClass = log.billableStatus === 'BILLED' ? 'badge-billed' : 'badge-unbilled';
   const billTxt = log.billableStatus === 'BILLED' ? 'Abgerechnet' : (log.billableStatus === 'PARTIAL' ? 'Teilweise' : 'Offen');
+  const editBtn = isAdmin()
+    ? `<button class="log-edit-btn" onclick="openEditLogModal(${log.id})" title="Bearbeiten">✏️</button>`
+    : '';
 
-  return `<div class="log-item">
+  return `<div class="log-item" data-log-id="${log.id}">
     <div class="log-bar" style="background:${log.projectColor || '#2196F3'}"></div>
     <div class="log-info">
       <div class="log-project">${esc(log.projectName || 'Unbekannt')}</div>
       <div class="log-desc ${log.description ? '' : 'no-desc'}">${log.description ? esc(log.description) : 'Keine Beschreibung'}</div>
       <div class="log-meta">${dateStr} &nbsp;<span class="${billClass}">${billTxt}</span></div>
     </div>
-    <div class="log-hours"><div class="log-h-val">${fmtHours(log.hoursWorked)}</div></div>
+    <div class="log-hours">
+      <div class="log-h-val">${fmtHours(log.hoursWorked)}</div>
+      ${editBtn}
+    </div>
   </div>`;
 }
 
@@ -230,7 +241,7 @@ function renderProjects() {
     };
   }).sort((a, b) => b.totalHours - a.totalHours);
 
-  el.innerHTML = enriched.map(p => `<div class="project-card">
+  el.innerHTML = enriched.map(p => `<div class="project-card project-card-clickable" onclick="showProjectDetail(${p.id})">
     <div class="project-header">
       <div class="project-avatar" style="background:${p.color}22;color:${p.color}">📁</div>
       <div class="project-meta"><div class="project-name">${esc(p.name)}</div></div>
@@ -243,8 +254,138 @@ function renderProjects() {
       <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(Number(p.hourlyRate) || 0)}</div><div class="p-num-lbl">Stundenlohn</div></div>
       <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(p.outstandingAmount)}</div><div class="p-num-lbl">Offener Betrag</div></div>
     </div>
+    <div class="project-card-hint">Details anzeigen →</div>
   </div>`).join('');
 }
+
+function showProjectDetail(projectId) {
+  const p = state.projects.find(pr => String(pr.id) === String(projectId));
+  if (!p) return;
+
+  const logs = state.workLogs.filter(l => String(l.projectId) === String(projectId));
+  const totalHours = logs.reduce((s, l) => s + (Number(l.hoursWorked) || 0), 0);
+  const billedHours = logs.reduce((s, l) => s + getBilledHours(l), 0);
+  const outstandingHours = Math.max(0, totalHours - billedHours);
+  const outstandingAmount = outstandingHours * (Number(p.hourlyRate) || 0);
+
+  document.getElementById('detail-title').textContent = p.name;
+  document.getElementById('detail-info').innerHTML = `
+    <div class="detail-info-top">
+      <div class="project-avatar" style="background:${p.color}22;color:${p.color};width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">📁</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">${esc(p.name)}</div>
+        <span class="status-pill status-${(p.status || 'ACTIVE').toLowerCase()}" style="margin-top:4px;display:inline-block;">${esc(p.status || 'ACTIVE')}</span>
+      </div>
+    </div>
+    <div class="project-numbers" style="margin-top:14px;">
+      <div class="p-num"><div class="p-num-val">${fmtHours(totalHours)}</div><div class="p-num-lbl">Gesamtstunden</div></div>
+      <div class="p-num"><div class="p-num-val">${fmtHours(billedHours)}</div><div class="p-num-lbl">Abgerechnet</div></div>
+      <div class="p-num"><div class="p-num-val">${fmtHours(outstandingHours)}</div><div class="p-num-lbl">Offen</div></div>
+      <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(Number(p.hourlyRate) || 0)}</div><div class="p-num-lbl">Stundenlohn</div></div>
+      <div class="p-num"><div class="p-num-val p-num-val-money">${fmtCurrency(outstandingAmount)}</div><div class="p-num-lbl">Offener Betrag</div></div>
+      <div class="p-num"><div class="p-num-val">${logs.length}</div><div class="p-num-lbl">Einträge</div></div>
+    </div>`;
+
+  document.getElementById('detail-logs').innerHTML = logs.length
+    ? logs.map(logHtml).join('')
+    : '<div class="empty-state"><div class="empty-title">Keine Einträge</div></div>';
+
+  document.getElementById('projects-container').classList.add('hidden');
+  const detail = document.getElementById('project-detail');
+  detail.classList.remove('hidden');
+  detail.scrollTop = 0;
+}
+
+function closeProjectDetail() {
+  document.getElementById('project-detail').classList.add('hidden');
+  document.getElementById('projects-container').classList.remove('hidden');
+}
+
+window.showProjectDetail = showProjectDetail;
+window.closeProjectDetail = closeProjectDetail;
+
+// ── WorkLog bearbeiten (Admin) ────────────────────────────────
+function openEditLogModal(logId) {
+  const log = state.workLogs.find(l => String(l.id) === String(logId));
+  if (!log) return;
+
+  document.getElementById('edit-log-id').value = String(logId);
+
+  // Projekt-Dropdown befüllen
+  const sel = document.getElementById('edit-log-project');
+  sel.innerHTML = state.projects.map(p =>
+    `<option value="${p.id}" ${String(p.id) === String(log.projectId) ? 'selected' : ''}>${esc(p.name)}</option>`
+  ).join('');
+
+  // Datum (ISO-Format YYYY-MM-DD für date input)
+  document.getElementById('edit-log-date').value = new Date(log.date).toISOString().slice(0, 10);
+
+  // Stunden (realer Wert, nicht aufgerundeter)
+  document.getElementById('edit-log-hours').value = log.hoursWorked;
+
+  document.getElementById('edit-log-desc').value = log.description || '';
+  document.getElementById('edit-log-status').value = log.billableStatus || 'UNBILLED';
+
+  document.getElementById('edit-modal-error').classList.add('hidden');
+  document.getElementById('edit-modal-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditLogModal() {
+  document.getElementById('edit-modal-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+async function saveEditLog() {
+  const logId = document.getElementById('edit-log-id').value;
+  const projectId = Number(document.getElementById('edit-log-project').value);
+  const dateVal = document.getElementById('edit-log-date').value;
+  const hoursVal = document.getElementById('edit-log-hours').value.replace(',', '.');
+  const description = document.getElementById('edit-log-desc').value.trim();
+  const billableStatus = document.getElementById('edit-log-status').value;
+  const errEl = document.getElementById('edit-modal-error');
+
+  const hours = parseFloat(hoursVal);
+  if (!dateVal || !Number.isFinite(hours) || hours <= 0) {
+    errEl.textContent = 'Bitte gültiges Datum und Stunden angeben.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const dateTs = new Date(dateVal).getTime();
+  const project = state.projects.find(p => p.id === projectId);
+
+  try {
+    errEl.classList.add('hidden');
+    const saveBtn = document.querySelector('#edit-modal-overlay .modal-btn-primary');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Speichern …';
+
+    await rootRef().collection('workLogs').doc(logId).update({
+      projectId,
+      projectName: project?.name || '',
+      projectColor: project?.color || '#2196F3',
+      date: dateTs,
+      hoursWorked: hours,
+      description,
+      billableStatus,
+      updatedAt: Date.now(),
+    });
+
+    closeEditLogModal();
+    await loadAllData();
+  } catch (e) {
+    errEl.textContent = 'Fehler beim Speichern: ' + (e?.message || 'Unbekannter Fehler');
+    errEl.classList.remove('hidden');
+  } finally {
+    const saveBtn = document.querySelector('#edit-modal-overlay .modal-btn-primary');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Speichern'; }
+  }
+}
+
+window.openEditLogModal = openEditLogModal;
+window.closeEditLogModal = closeEditLogModal;
+window.saveEditLog = saveEditLog;
 
 function fillProjectFilter() {
   const sel = document.getElementById('filter-project');

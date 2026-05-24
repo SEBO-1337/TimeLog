@@ -24,10 +24,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.sebo.timelog.data.local.entities.BillableStatus
 import com.sebo.timelog.data.local.entities.Project
+import com.sebo.timelog.data.local.entities.WorkLog
 import com.sebo.timelog.utils.DateUtils
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Locale
 
 @Composable
@@ -344,3 +345,174 @@ fun AddWorkLogDialog(
         }
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditWorkLogDialog(
+    workLog: WorkLog,
+    projects: List<Project>,
+    onConfirm: (WorkLog) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY)
+
+    var selectedProject by remember { mutableStateOf(projects.find { it.id == workLog.projectId } ?: projects.firstOrNull()) }
+    var projectDropdownExpanded by remember { mutableStateOf(false) }
+    var hoursInput by remember { mutableStateOf(workLog.hoursWorked.toString().replace('.', ',')) }
+    var dateInput by remember { mutableStateOf(DateUtils.formatDate(workLog.date)) }
+    var description by remember { mutableStateOf(TextFieldValue(workLog.description)) }
+    var notes by remember { mutableStateOf(workLog.notes ?: "") }
+    var statusDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedStatus by remember { mutableStateOf(workLog.billableStatus) }
+
+    val statusLabels = mapOf(
+        BillableStatus.UNBILLED to "Offen",
+        BillableStatus.PARTIAL  to "Teilweise abgerechnet",
+        BillableStatus.BILLED   to "Abgerechnet"
+    )
+
+    val parsedHours = hoursInput.replace(',', '.').toDoubleOrNull()
+    val parsedDate  = runCatching { sdf.parse(dateInput.trim())?.time }.getOrNull()
+    val isValid = selectedProject != null && parsedHours != null && parsedHours > 0.0 && parsedDate != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Eintrag bearbeiten") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Projekt
+                ExposedDropdownMenuBox(
+                    expanded = projectDropdownExpanded,
+                    onExpandedChange = { projectDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedProject?.name ?: "Projekt wählen",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Projekt") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = projectDropdownExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = projectDropdownExpanded,
+                        onDismissRequest = { projectDropdownExpanded = false }
+                    ) {
+                        projects.forEach { project ->
+                            DropdownMenuItem(
+                                text = { Text(project.name) },
+                                onClick = {
+                                    selectedProject = project
+                                    projectDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                // Datum
+                OutlinedTextField(
+                    value = dateInput,
+                    onValueChange = { dateInput = it },
+                    label = { Text("Datum") },
+                    singleLine = true,
+                    supportingText = { Text("Format: TT.MM.JJJJ") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Stunden
+                OutlinedTextField(
+                    value = hoursInput,
+                    onValueChange = { hoursInput = it },
+                    label = { Text("Stunden") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Beschreibung
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { newValue ->
+                        val oldText = description.text
+                        val newText = newValue.text
+                        if (newText.length > oldText.length) {
+                            val insertPos = newValue.selection.start
+                            val inserted = newText.substring(oldText.length.coerceAtMost(insertPos - 1), insertPos)
+                            if (inserted.contains("\n")) {
+                                val withPrefix = newText.substring(0, insertPos) + "- " + newText.substring(insertPos)
+                                val newCursor = insertPos + 2
+                                description = TextFieldValue(withPrefix, TextRange(newCursor))
+                                return@OutlinedTextField
+                            }
+                        }
+                        description = newValue
+                    },
+                    label = { Text("Beschreibung") },
+                    minLines = 3,
+                    maxLines = 6,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Default),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Notizen
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notizen (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Abrechnungsstatus
+                ExposedDropdownMenuBox(
+                    expanded = statusDropdownExpanded,
+                    onExpandedChange = { statusDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = statusLabels[selectedStatus] ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Abrechnungsstatus") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusDropdownExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = statusDropdownExpanded,
+                        onDismissRequest = { statusDropdownExpanded = false }
+                    ) {
+                        BillableStatus.entries.forEach { status ->
+                            DropdownMenuItem(
+                                text = { Text(statusLabels[status] ?: status.name) },
+                                onClick = {
+                                    selectedStatus = status
+                                    statusDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (isValid) {
+                        onConfirm(
+                            workLog.copy(
+                                projectId      = selectedProject!!.id,
+                                hoursWorked    = parsedHours!!,
+                                date           = parsedDate!!,
+                                description    = description.text,
+                                notes          = notes.ifBlank { null },
+                                billableStatus = selectedStatus,
+                                updatedAt      = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                },
+                enabled = isValid
+            ) {
+                Text("Speichern")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+        }
+    )
+}
+
