@@ -21,6 +21,7 @@ import com.sebo.timelog.ui.screens.history.HistoryViewModel
 import com.sebo.timelog.ui.screens.projects.ProjectDetailScreen
 import com.sebo.timelog.ui.screens.projects.ProjectsScreen
 import com.sebo.timelog.ui.screens.projects.ProjectsViewModel
+import com.sebo.timelog.ui.screens.settings.DataManagementScreen
 import com.sebo.timelog.ui.screens.settings.SettingsScreen
 import com.sebo.timelog.ui.screens.statistics.StatisticsScreen
 import com.sebo.timelog.ui.screens.statistics.StatisticsViewModel
@@ -214,7 +215,14 @@ private fun androidx.navigation.NavGraphBuilder.addMainGraph(
     }
 
     composable(Screens.Settings.route) {
-        SettingsScreen(onLogout = onLogout)
+        SettingsScreen(
+            onLogout = onLogout,
+            onNavigateToDataManagement = { navController.navigate(DetailRoutes.DATA_MANAGEMENT) }
+        )
+    }
+
+    composable(DetailRoutes.DATA_MANAGEMENT) {
+        DataManagementScreen(onNavigateBack = { navController.popBackStack() })
     }
 
     composable(
