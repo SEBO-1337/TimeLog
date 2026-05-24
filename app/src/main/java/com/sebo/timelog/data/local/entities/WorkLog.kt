@@ -22,7 +22,8 @@ enum class BillableStatus {
     indices = [
         Index(value = ["projectId"]),
         Index(value = ["date"]),
-        Index(value = ["billableStatus"])
+        Index(value = ["billableStatus"]),
+        Index(value = ["cloudId"], unique = true)
     ]
 )
 data class WorkLog(
@@ -38,6 +39,7 @@ data class WorkLog(
     val billableStatus: BillableStatus = BillableStatus.UNBILLED,
     val notes: String? = null,
     val tags: String? = null,
+    val cloudId: String = "",   // Stabiler Cloud-Schluessel (UUID)
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

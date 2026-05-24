@@ -89,12 +89,17 @@ class ProjectRepository(
 
     suspend fun delete(project: Project) {
         projectDao.delete(project)
-        syncService?.deleteProject(project.id)
+        if (syncService != null && project.cloudId.isNotBlank()) {
+            syncService.deleteProject(project.cloudId)
+        }
     }
 
     suspend fun deleteById(id: Long) {
+        val project = projectDao.getProjectByIdOnce(id)
         projectDao.deleteById(id)
-        syncService?.deleteProject(id)
+        if (syncService != null && project != null && project.cloudId.isNotBlank()) {
+            syncService.deleteProject(project.cloudId)
+        }
     }
 
     fun getProjectCount(): Flow<Int> = projectDao.getProjectCount()

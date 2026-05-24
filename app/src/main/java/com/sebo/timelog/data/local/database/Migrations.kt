@@ -39,3 +39,15 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/**
+ * Migration von Version 4 auf 5:
+ * Fuegt `cloudId` als UUID-basierte WorkLog-ID fuer den Cloud-Sync hinzu.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE work_logs ADD COLUMN cloudId TEXT NOT NULL DEFAULT ''")
+        db.execSQL("UPDATE work_logs SET cloudId = 'legacy-' || id WHERE cloudId = ''")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_work_logs_cloudId` ON `work_logs` (`cloudId`)")
+    }
+}
+

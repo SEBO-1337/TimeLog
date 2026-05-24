@@ -30,6 +30,12 @@ interface WorkLogDao {
     @Query("SELECT * FROM work_logs WHERE id = :id")
     fun getWorkLogById(id: Long): Flow<WorkLog?>
 
+    @Query("SELECT * FROM work_logs WHERE id = :id")
+    suspend fun getWorkLogByIdOnce(id: Long): WorkLog?
+
+    @Query("SELECT * FROM work_logs WHERE cloudId = :cloudId LIMIT 1")
+    suspend fun getWorkLogByCloudIdOnce(cloudId: String): WorkLog?
+
     @Query("SELECT COALESCE(SUM(hoursWorked), 0.0) FROM work_logs WHERE projectId = :projectId")
     fun getTotalHoursForProject(projectId: Long): Flow<Double>
 

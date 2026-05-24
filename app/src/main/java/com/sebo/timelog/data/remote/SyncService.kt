@@ -84,16 +84,18 @@ class SyncService private constructor(firestore: FirebaseFirestore) {
         }
     }
 
-    fun deleteProject(projectId: Long) {
+    fun deleteProject(cloudId: String) {
         runSync("deleteProject") {
-            rootDoc.collection("projects").document(projectId.toString()).delete().await()
+            rootDoc.collection("projects").document(cloudId).delete().await()
         }
     }
 
     fun syncWorkLog(workLog: WorkLog, createdBy: String? = null, projectCloudId: String? = null) {
         runSync("syncWorkLog") {
+            val docId = workLog.cloudId.ifBlank { "legacy-${workLog.id}" }
             val data = mapOf(
                 "id" to workLog.id,
+                "cloudId" to docId,
                 "projectId" to workLog.projectId,
                 "projectCloudId" to projectCloudId,
                 "description" to workLog.description,
@@ -109,13 +111,13 @@ class SyncService private constructor(firestore: FirebaseFirestore) {
                 "createdAt" to workLog.createdAt,
                 "updatedAt" to workLog.updatedAt
             )
-            rootDoc.collection("workLogs").document(workLog.id.toString()).set(data).await()
+            rootDoc.collection("workLogs").document(docId).set(data).await()
         }
     }
 
-    fun deleteWorkLog(workLogId: Long) {
+    fun deleteWorkLog(workLogCloudId: String) {
         runSync("deleteWorkLog") {
-            rootDoc.collection("workLogs").document(workLogId.toString()).delete().await()
+            rootDoc.collection("workLogs").document(workLogCloudId).delete().await()
         }
     }
 
@@ -247,7 +249,8 @@ class SyncService private constructor(firestore: FirebaseFirestore) {
         val snapshot = query.get().await()
         return snapshot.documents.mapNotNull { doc ->
             val createdAtFallback = doc.longOrNull("createdAt") ?: System.currentTimeMillis()
-            val id = doc.longOrNull("id") ?: doc.id.toLongOrNull() ?: createdAtFallback
+            val cloudId = (doc.getString("cloudId") ?: doc.id).ifBlank { return@mapNotNull null }
+            val id = doc.longOrNull("id") ?: createdAtFallback
             val projectId = doc.longOrNull("projectId") ?: -1L
             val projectCloudId = doc.getString("projectCloudId")
             val hoursWorked = doc.doubleOrNull("hoursWorked") ?: 0.0
@@ -271,6 +274,7 @@ class SyncService private constructor(firestore: FirebaseFirestore) {
                     billableStatus = billableStatus,
                     notes = doc.getString("notes"),
                     tags = doc.getString("tags"),
+                    cloudId = cloudId,
                     createdAt = createdAtFallback,
                     updatedAt = doc.longOrNull("updatedAt") ?: createdAtFallback
                 ),

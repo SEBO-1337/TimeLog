@@ -9,6 +9,7 @@ import com.sebo.timelog.utils.effectiveBilledHours
 import com.sebo.timelog.utils.pendingHours
 import com.sebo.timelog.utils.withBilledHours
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 class WorkLogRepository(
     private val workLogDao: WorkLogDao,
@@ -51,17 +52,22 @@ class WorkLogRepository(
         workLogDao.getLastActivityDate(projectId)
 
     suspend fun insert(workLog: WorkLog): Long {
-        val id = workLogDao.insert(workLog)
+        val cloudId = workLog.cloudId.ifBlank { UUID.randomUUID().toString() }
+        val workLogWithCloudId = workLog.copy(cloudId = cloudId)
+        val id = workLogDao.insert(workLogWithCloudId)
         val uid = authService?.currentUser()?.uid
         val projectCloudId = projectDao.getProjectByIdOnce(workLog.projectId)?.cloudId
-        syncService?.syncWorkLog(workLog.copy(id = id), uid, projectCloudId)
+        syncService?.syncWorkLog(workLogWithCloudId.copy(id = id), uid, projectCloudId)
         return id
     }
 
     suspend fun insertAll(workLogs: List<WorkLog>) {
-        workLogDao.insertAll(workLogs)
+        val logsWithCloudIds = workLogs.map { log ->
+            log.copy(cloudId = log.cloudId.ifBlank { UUID.randomUUID().toString() })
+        }
+        workLogDao.insertAll(logsWithCloudIds)
         val uid = authService?.currentUser()?.uid
-        workLogs.forEach {
+        logsWithCloudIds.forEach {
             val projectCloudId = projectDao.getProjectByIdOnce(it.projectId)?.cloudId
             syncService?.syncWorkLog(it, uid, projectCloudId)
         }
@@ -136,11 +142,16 @@ class WorkLogRepository(
 
     suspend fun delete(workLog: WorkLog) {
         workLogDao.delete(workLog)
-        syncService?.deleteWorkLog(workLog.id)
+        if (workLog.cloudId.isNotBlank()) {
+            syncService?.deleteWorkLog(workLog.cloudId)
+        }
     }
 
     suspend fun deleteById(id: Long) {
+        val workLog = workLogDao.getWorkLogByIdOnce(id)
         workLogDao.deleteById(id)
-        syncService?.deleteWorkLog(id)
+        if (workLog != null && workLog.cloudId.isNotBlank()) {
+            syncService?.deleteWorkLog(workLog.cloudId)
+        }
     }
 }

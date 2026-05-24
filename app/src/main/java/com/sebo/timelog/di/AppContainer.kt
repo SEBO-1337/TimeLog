@@ -101,9 +101,20 @@ class AppContainer(context: Context) {
                         }
 
                         if (localProjectId != null) {
-                            database.workLogDao().insert(
-                                remoteLog.workLog.copy(projectId = localProjectId)
-                            )
+                            val existing = database.workLogDao().getWorkLogByCloudIdOnce(remoteLog.workLog.cloudId)
+                            if (existing == null) {
+                                database.workLogDao().insert(
+                                    remoteLog.workLog.copy(id = 0, projectId = localProjectId)
+                                )
+                            } else {
+                                database.workLogDao().update(
+                                    remoteLog.workLog.copy(
+                                        id = existing.id,
+                                        projectId = localProjectId,
+                                        createdAt = existing.createdAt
+                                    )
+                                )
+                            }
                         }
                     } catch (e: Exception) {
                         android.util.Log.w("AppContainer", "WorkLog-Import uebersprungen (id=${remoteLog.workLog.id}): ${e.message}")
