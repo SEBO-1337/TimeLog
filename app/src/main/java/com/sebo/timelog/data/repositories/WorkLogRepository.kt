@@ -82,6 +82,46 @@ class WorkLogRepository(
             .forEach { markAsFullyBilled(it) }
     }
 
+    /**
+     * Rechnet einen bestimmten Stundenbetrag ab (darf ins Minus gehen).
+     * Stunden werden ältesten-zuerst auf die WorkLogs verteilt.
+     * Wenn mehr Stunden abgerechnet werden als vorhanden, gehen die restlichen
+     * Stunden auf den letzten WorkLog (negative pending hours).
+     */
+    suspend fun billProjectByHours(projectId: Long, hoursToBill: Double) {
+        val workLogs = workLogDao.getWorkLogsByProjectOnce(projectId).sortedBy { it.date }
+        if (workLogs.isEmpty()) return
+
+        var remaining = hoursToBill
+
+        // Erst offene Stunden älteste-zuerst abrechnen
+        for (log in workLogs) {
+            if (remaining <= 0.0001) break
+            val alreadyBilled = log.effectiveBilledHours()
+            val workedHours = log.hoursWorked.coerceAtLeast(0.0)
+            val pendingInLog = workedHours - alreadyBilled
+            if (pendingInLog > 0.0001) {
+                val toBill = minOf(remaining, pendingInLog)
+                update(log.withBilledHours(alreadyBilled + toBill))
+                remaining -= toBill
+            }
+        }
+
+        // Wenn noch Stunden übrig sind → Überzahlung auf den letzten WorkLog buchen
+        if (remaining > 0.0001) {
+            val lastLog = workLogDao.getWorkLogsByProjectOnce(projectId).maxByOrNull { it.date }
+                ?: workLogs.last()
+            val newBilled = lastLog.effectiveBilledHours() + remaining
+            update(
+                lastLog.copy(
+                    hoursBilled = newBilled,
+                    billableStatus = com.sebo.timelog.data.local.entities.BillableStatus.BILLED,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
     suspend fun delete(workLog: WorkLog) {
         workLogDao.delete(workLog)
         syncService?.deleteWorkLog(workLog.id)

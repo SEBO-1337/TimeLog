@@ -5,7 +5,8 @@ import com.sebo.timelog.data.local.entities.WorkLog
 
 fun WorkLog.effectiveBilledHours(): Double {
     val workedHours = hoursWorked.coerceAtLeast(0.0)
-    val explicitBilledHours = hoursBilled.coerceAtLeast(0.0).coerceAtMost(workedHours)
+    // Keine Obergrenze – Überzahlung (Minusstunden) ist erlaubt
+    val explicitBilledHours = hoursBilled.coerceAtLeast(0.0)
 
     return if (billableStatus == BillableStatus.BILLED) {
         if (explicitBilledHours > 0.0) explicitBilledHours else workedHours
@@ -15,7 +16,8 @@ fun WorkLog.effectiveBilledHours(): Double {
 }
 
 fun WorkLog.pendingHours(): Double {
-    return (hoursWorked.coerceAtLeast(0.0) - effectiveBilledHours()).coerceAtLeast(0.0)
+    // Kann negativ werden, wenn mehr abgerechnet wurde als gearbeitet
+    return hoursWorked.coerceAtLeast(0.0) - effectiveBilledHours()
 }
 
 fun WorkLog.resolvedBillableStatus(): BillableStatus {
@@ -32,7 +34,8 @@ fun WorkLog.withBilledHours(
     updatedAt: Long = System.currentTimeMillis()
 ): WorkLog {
     val normalizedWorkedHours = hoursWorked.coerceAtLeast(0.0)
-    val normalizedBilledHours = billedHours.coerceIn(0.0, normalizedWorkedHours)
+    // Keine Obergrenze – Überzahlung erlaubt
+    val normalizedBilledHours = billedHours.coerceAtLeast(0.0)
     val status = when {
         normalizedBilledHours <= 0.0 -> BillableStatus.UNBILLED
         normalizedWorkedHours <= 0.0 || normalizedBilledHours >= normalizedWorkedHours -> BillableStatus.BILLED

@@ -43,7 +43,7 @@ object TimeFormatter {
      * Formatiert Dezimalstunden in "X,X h" Format
      */
     fun formatHoursShort(hours: Double): String {
-        return String.format(Locale.getDefault(), "%.1f h", hours)
+        return String.format(Locale.getDefault(), "%.2f h", hours)
     }
 
     /**
@@ -51,6 +51,14 @@ object TimeFormatter {
      */
     fun millisToHours(millis: Long): Double {
         return millis.toDouble() / (1000 * 60 * 60)
+    }
+
+    /**
+     * Rundet Dezimalstunden auf das nächste 0,25-Stunden-Intervall (15 min) auf.
+     * z.B. 0.1 → 0.25, 0.26 → 0.5, 0.51 → 0.75, 0.76 → 1.0
+     */
+    fun roundUpToHalfHour(hours: Double): Double {
+        return kotlin.math.ceil(hours * 4.0) / 4.0
     }
 
     /**

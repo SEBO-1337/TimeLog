@@ -127,6 +127,22 @@ class ProjectsViewModel(
         }
     }
 
+    /**
+     * Rechnet einen Geldbetrag ab. Die entsprechenden Stunden werden auf dem Projekt abgezogen.
+     * Wenn mehr Geld ausgezahlt wird als Stunden vorhanden, gehen die Stunden ins Minus.
+     */
+    fun billProjectByAmount(projectId: Long, amount: Double, hourlyRate: Double) {
+        if (hourlyRate <= 0.0) return
+        val hoursToBill = amount / hourlyRate
+        viewModelScope.launch {
+            try {
+                workLogRepository.billProjectByHours(projectId, hoursToBill)
+            } catch (e: Exception) {
+                _uiState.value = ProjectsUiState.Error("Fehler beim Abrechnen: ${e.message}")
+            }
+        }
+    }
+
     companion object {
         fun factory(
             projectRepository: ProjectRepository,

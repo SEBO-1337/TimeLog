@@ -9,6 +9,7 @@ import com.sebo.timelog.data.local.entities.WorkLog
 import com.sebo.timelog.ui.components.ManualWorkLogInput
 import com.sebo.timelog.data.repositories.ProjectRepository
 import com.sebo.timelog.data.repositories.WorkLogRepository
+import com.sebo.timelog.utils.TimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +77,7 @@ class HistoryViewModel(
             workLogRepository.insert(
                 WorkLog(
                     projectId = input.projectId,
-                    hoursWorked = input.hoursWorked,
+                    hoursWorked = TimeFormatter.roundUpToHalfHour(input.hoursWorked),
                     date = input.date,
                     description = input.description,
                     notes = input.notes.ifBlank { null },

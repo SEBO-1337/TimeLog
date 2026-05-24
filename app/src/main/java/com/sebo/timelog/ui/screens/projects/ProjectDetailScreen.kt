@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.sebo.timelog.ui.components.BillingAmountDialog
 import com.sebo.timelog.ui.components.ConfirmDialog
 import com.sebo.timelog.ui.components.LoadingIndicator
 import com.sebo.timelog.ui.components.TimeLogDetailTopAppBar
@@ -37,7 +38,9 @@ fun ProjectDetailScreen(
     val billingSummaries by viewModel.projectBillingSummaries.collectAsState()
     val project = projects.find { it.id == projectId }
     val billingSummary = billingSummaries[projectId]
-    var showBillingConfirm by remember { mutableStateOf(false) }
+
+    var showHoursBillingConfirm by remember { mutableStateOf(false) }
+    var showAmountBillingDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -106,24 +109,40 @@ fun ProjectDetailScreen(
                             text = "Abgerechnet: ${TimeFormatter.formatHoursDecimal(billingSummary?.billedHours ?: 0.0)}",
                             style = MaterialTheme.typography.bodyMedium
                         )
+
+                        val pendingHours = billingSummary?.pendingHours ?: 0.0
+                        val pendingColor = if (pendingHours < -0.0001)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.primary
+
                         Text(
-                            text = "Offen: ${TimeFormatter.formatHoursDecimal(billingSummary?.pendingHours ?: 0.0)}",
+                            text = if (pendingHours < -0.0001)
+                                "Minusstunden: ${TimeFormatter.formatHoursDecimal(pendingHours)}"
+                            else
+                                "Offen: ${TimeFormatter.formatHoursDecimal(pendingHours)}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = pendingColor
                         )
+
                         if (project.hourlyRate > 0) {
+                            val openAmount = billingSummary?.openAmount ?: 0.0
                             Text(
-                                text = "Offener Betrag: ${(billingSummary?.openAmount ?: 0.0).toCurrencyString()}",
+                                text = if (openAmount < -0.0001)
+                                    "Guthaben: ${(-openAmount).toCurrencyString()}"
+                                else
+                                    "Offener Betrag: ${openAmount.toCurrencyString()}",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = pendingColor
                             )
                         }
                     }
                 }
 
-                if ((billingSummary?.pendingHours ?: 0.0) > 0.0001) {
+                // Stunden-basiertes Abrechnen (nur wenn offene Stunden vorhanden)
+                if (pendingHoursValue(billingSummary) > 0.0001) {
                     Button(
-                        onClick = { showBillingConfirm = true },
+                        onClick = { showHoursBillingConfirm = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp)
@@ -131,21 +150,52 @@ fun ProjectDetailScreen(
                         Text("Offene Stunden abrechnen")
                     }
                 }
+
+                // Geld-basiertes Abrechnen (wenn Stundensatz hinterlegt und Einträge vorhanden)
+                if (project.hourlyRate > 0 && (billingSummary?.totalHours ?: 0.0) > 0.0) {
+                    Button(
+                        onClick = { showAmountBillingDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = if (pendingHoursValue(billingSummary) > 0.0001) 8.dp else 16.dp
+                            )
+                    ) {
+                        Text("Geldbetrag abrechnen")
+                    }
+                }
             }
         }
     }
 
-    if (showBillingConfirm && project != null) {
+    // Dialog: klassisches Stunden-Abrechnen
+    if (showHoursBillingConfirm && project != null) {
         ConfirmDialog(
             title = "Projekt abrechnen",
             message = "Möchtest du alle offenen ${TimeFormatter.formatHoursDecimal(billingSummary?.pendingHours ?: 0.0)} für \"${project.name}\" als abgerechnet markieren?",
             confirmText = "Abrechnen",
             onConfirm = {
                 viewModel.markProjectPendingAsBilled(project.id)
-                showBillingConfirm = false
+                showHoursBillingConfirm = false
             },
-            onDismiss = { showBillingConfirm = false }
+            onDismiss = { showHoursBillingConfirm = false }
+        )
+    }
+
+    // Dialog: Geldbetrag abrechnen (erlaubt Minusstunden)
+    if (showAmountBillingDialog && project != null) {
+        BillingAmountDialog(
+            projectName = project.name,
+            hourlyRate = project.hourlyRate,
+            pendingHours = billingSummary?.pendingHours ?: 0.0,
+            onConfirm = { amount ->
+                viewModel.billProjectByAmount(project.id, amount, project.hourlyRate)
+                showAmountBillingDialog = false
+            },
+            onDismiss = { showAmountBillingDialog = false }
         )
     }
 }
 
+private fun pendingHoursValue(summary: ProjectBillingSummary?): Double =
+    summary?.pendingHours ?: 0.0

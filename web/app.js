@@ -41,6 +41,11 @@ function esc(s) {
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
+function roundUpToQuarter(h) {
+  if (!h || h <= 0) return 0;
+  return Math.ceil(h * 4) / 4;
+}
+
 function fmtTime(ms) {
   const s = Math.floor(ms / 1000);
   return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
@@ -383,6 +388,7 @@ async function loadAllData() {
     state.projects = projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     state.workLogs = workLogs.map(log => ({
       ...log,
+      hoursWorked: roundUpToQuarter(Number(log.hoursWorked) || 0),
       projectName: log.projectName || projectsById.get(String(log.projectId))?.name,
       projectColor: log.projectColor || projectsById.get(String(log.projectId))?.color,
     }));

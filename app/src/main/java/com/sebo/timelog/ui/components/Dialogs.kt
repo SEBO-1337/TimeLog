@@ -9,6 +9,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -133,6 +134,84 @@ data class ManualWorkLogInput(
     val notes: String
 )
 
+/**
+ * Dialog zum Abrechnen per Geldbetrag.
+ * Der Benutzer gibt den ausgezahlten Betrag ein, die entsprechenden Stunden werden berechnet.
+ * Wenn mehr Geld eingegeben wird als offene Stunden vorhanden, gehen die Stunden ins Minus.
+ *
+ * @param hourlyRate Stundensatz in €
+ * @param pendingHours Noch offene Stunden (kann negativ sein)
+ * @param onConfirm Callback mit dem eingegebenen Betrag in €
+ */
+@Composable
+fun BillingAmountDialog(
+    projectName: String,
+    hourlyRate: Double,
+    pendingHours: Double,
+    onConfirm: (Double) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amountInput by remember { mutableStateOf("") }
+    val parsedAmount = amountInput.replace(',', '.').toDoubleOrNull()
+    val isValid = parsedAmount != null && parsedAmount > 0.0
+
+    val hoursEquivalent = if (parsedAmount != null && hourlyRate > 0.0) parsedAmount / hourlyRate else null
+    val openAmount = pendingHours * hourlyRate
+    val isOverpayment = hoursEquivalent != null && hoursEquivalent > pendingHours + 0.0001
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Abrechnen: $projectName") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Offener Betrag: ${String.format("%.2f", openAmount)} €" +
+                            " (${String.format("%.2f", pendingHours)} Std.)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = amountInput,
+                    onValueChange = { amountInput = it },
+                    label = { Text("Ausgezahlter Betrag (€)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    supportingText = { Text("Beispiel: 150,00") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (hoursEquivalent != null) {
+                    Text(
+                        text = "= ${String.format("%.2f", hoursEquivalent)} Std. (bei ${String.format("%.2f", hourlyRate)} €/Std.)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (isOverpayment && hoursEquivalent != null) {
+                    val excessHours = hoursEquivalent - pendingHours
+                    Text(
+                        text = "⚠ Betrag übersteigt die offenen Stunden um ${String.format("%.2f", excessHours)} Std. – " +
+                                "die Stunden gehen ins Minus.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsedAmount?.let(onConfirm) },
+                enabled = isValid
+            ) {
+                Text("Abrechnen")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkLogDialog(
@@ -198,7 +277,7 @@ fun AddWorkLogDialog(
                     onValueChange = { hoursInput = it },
                     label = { Text("Stunden") },
                     singleLine = true,
-                    supportingText = { Text("Beispiel: 2,5") },
+                    supportingText = { Text("Beispiel: 2,5 · wird auf 0,25 h aufgerundet") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )

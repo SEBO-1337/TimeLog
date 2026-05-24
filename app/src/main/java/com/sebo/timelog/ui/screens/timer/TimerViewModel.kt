@@ -166,7 +166,7 @@ class TimerViewModel(
             currentTimer.value?.let { timer ->
                 val endTime = System.currentTimeMillis()
                 val totalElapsed = _elapsedMillis.value
-                val hoursWorked = TimeFormatter.millisToHours(totalElapsed)
+                val hoursWorked = TimeFormatter.roundUpToHalfHour(TimeFormatter.millisToHours(totalElapsed))
 
                 // WorkLog erstellen
                 val workLog = WorkLog(
