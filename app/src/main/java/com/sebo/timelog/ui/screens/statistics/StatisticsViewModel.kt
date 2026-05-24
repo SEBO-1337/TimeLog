@@ -32,13 +32,14 @@ class StatisticsViewModel(
 
     val uiState: StateFlow<StatisticsUiState> = combine(
         workLogRepository.getAllWorkLogs(),
-        projectRepository.getAllProjects()
+        projectRepository.getVisibleProjects()
     ) { workLogs, projects ->
-        val totalHours = workLogs.sumOf { it.hoursWorked }
         val projectMap = projects.associateBy { it.id }
+        val visibleLogs = workLogs.filter { it.projectId in projectMap.keys }
+        val totalHours = visibleLogs.sumOf { it.hoursWorked }
 
         val projectStats = projects.map { project ->
-            val projectLogs = workLogs.filter { it.projectId == project.id }
+                val projectLogs = visibleLogs.filter { it.projectId == project.id }
             val hours = projectLogs.sumOf { it.hoursWorked }
             ProjectStatItem(
                 project = project,
@@ -51,7 +52,7 @@ class StatisticsViewModel(
 
         StatisticsUiState(
             totalHours = totalHours,
-            totalEntries = workLogs.size,
+            totalEntries = visibleLogs.size,
             projectStats = projectStats,
             isLoading = false
         )

@@ -25,8 +25,30 @@ service cloud.firestore {
       return hasUserDoc() && userRole() == 'CUSTOMER';
     }
 
+    function isTechnician() {
+      return hasUserDoc() && userRole() == 'TECHNICIAN';
+    }
+
     function hasProjectAccess(projectId) {
-      return isCustomer() && projectId in userDoc().data.allowedProjectIds;
+      return isCustomer()
+        && (
+          projectId in userDoc().data.allowedProjectIds
+          || (projectId + '') in userDoc().data.allowedProjectIds
+        );
+    }
+
+    function isProjectCreator(createdBy) {
+      return isTechnician() && createdBy == request.auth.uid;
+    }
+
+    function projectDocById(projectCloudId) {
+      return get(/databases/$(database)/documents/shared/default/projects/$(projectCloudId + ''));
+    }
+
+    function technicianOwnProject(projectCloudId) {
+      return isTechnician()
+        && projectDocById(projectCloudId).exists()
+        && projectDocById(projectCloudId).data.createdBy == request.auth.uid;
     }
 
     // Nutzerprofile und Rollen
@@ -46,19 +68,81 @@ service cloud.firestore {
 
     // Freigegebene Projektdaten
     match /shared/default/projects/{projectDocId} {
-      allow read: if isAdmin() || hasProjectAccess(resource.data.id);
-      allow write: if isAdmin();
+      allow read: if isAdmin()
+        || hasProjectAccess(projectDocId)
+        || isProjectCreator(resource.data.createdBy);
+
+      // Admin darf alles.
+      allow create: if isAdmin()
+        || (
+          isTechnician()
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.cloudId == projectDocId
+        );
+
+      // Technician darf nur eigene Projekte aktualisieren.
+      allow update: if isAdmin()
+        || (
+          isTechnician()
+          && resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.cloudId == resource.data.cloudId
+        );
+
+      // Technician darf nur eigene Projekte löschen.
+      allow delete: if isAdmin()
+        || (isTechnician() && resource.data.createdBy == request.auth.uid);
     }
 
     match /shared/default/workLogs/{workLogId} {
-      allow read: if isAdmin() || hasProjectAccess(resource.data.projectId);
-      allow write: if isAdmin();
+      allow read: if isAdmin()
+        || hasProjectAccess(resource.data.projectCloudId)
+        || (isTechnician() && resource.data.createdBy == request.auth.uid);
+
+      // WorkLog erstellen: Admin oder der eingeloggte Technician (createdBy == uid).
+      allow create: if isAdmin()
+        || (
+          isTechnician()
+          && request.resource.data.createdBy == request.auth.uid
+          && technicianOwnProject(request.resource.data.projectCloudId)
+        );
+
+      // WorkLog ändern: Technician nur an eigenen WorkLogs.
+      allow update: if isAdmin()
+        || (
+          isTechnician()
+          && resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdBy == request.auth.uid
+          && technicianOwnProject(resource.data.projectCloudId)
+          && technicianOwnProject(request.resource.data.projectCloudId)
+        );
+
+      // WorkLog löschen: Technician nur eigene.
+      allow delete: if isAdmin()
+        || (
+          isTechnician()
+          && resource.data.createdBy == request.auth.uid
+          && technicianOwnProject(resource.data.projectCloudId)
+        );
     }
 
     match /shared/default/meta/{metaDoc} {
-      // CUSTOMER darf meta-Dokumente lesen; Filterung nach Projekt erfolgt im App-Code.
-      allow read: if isAdmin() || isCustomer();
-      allow write: if isAdmin();
+      // CUSTOMER und TECHNICIAN darf meta-Dokumente lesen; Filterung nach Projekt erfolgt im App-Code.
+      allow read: if isAdmin() || isCustomer() || isTechnician();
+
+      // activeTimer darf auch von Technician geschrieben werden, aber nur fuer eigene Projekte.
+      allow write: if isAdmin()
+        || (
+          isTechnician()
+          && metaDoc == 'activeTimer'
+          && request.resource != null
+          && technicianOwnProject(request.resource.data.projectCloudId)
+        )
+        || (
+          isTechnician()
+          && metaDoc == 'activeTimer'
+          && request.resource == null
+        );
     }
 
     // Standard: alles andere gesperrt.

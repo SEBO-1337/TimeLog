@@ -3,6 +3,7 @@ package com.sebo.timelog.ui.screens.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.sebo.timelog.data.model.UserRole
 import com.sebo.timelog.data.remote.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ data class AuthUiState(
     val isAuthenticated: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val email: String? = null
+    val email: String? = null,
+    val userRole: UserRole = UserRole.NEW
 )
 
 class AuthViewModel(
@@ -23,7 +25,8 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow(
         AuthUiState(
             isAuthenticated = authService.currentUser() != null,
-            email = authService.currentUser()?.email
+            email = authService.currentUser()?.email,
+            userRole = UserRole.NEW
         )
     )
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -37,6 +40,13 @@ class AuthViewModel(
                     isLoading = false,
                     errorMessage = null
                 )
+                // Lade Benutzerrolle nach Login
+                if (user != null) {
+                    val role = authService.getUserRole()
+                    _uiState.value = _uiState.value.copy(userRole = role)
+                } else {
+                    _uiState.value = _uiState.value.copy(userRole = UserRole.NEW)
+                }
             }
         }
     }

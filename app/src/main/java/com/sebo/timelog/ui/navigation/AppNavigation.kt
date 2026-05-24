@@ -53,7 +53,8 @@ fun AppNavigation(
     val projectsViewModel: ProjectsViewModel = viewModel(
         factory = ProjectsViewModel.factory(
             container.projectRepository,
-            container.workLogRepository
+            container.workLogRepository,
+            authService
         )
     )
 
@@ -140,7 +141,8 @@ private fun AppContentNavHost(
     val projectsViewModel: ProjectsViewModel = viewModel(
         factory = ProjectsViewModel.factory(
             container.projectRepository,
-            container.workLogRepository
+            container.workLogRepository,
+            null
         )
     )
 

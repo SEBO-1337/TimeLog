@@ -1,7 +1,9 @@
 package com.sebo.timelog.data.repositories
 
+import com.sebo.timelog.data.local.dao.ProjectDao
 import com.sebo.timelog.data.local.dao.WorkLogDao
 import com.sebo.timelog.data.local.entities.WorkLog
+import com.sebo.timelog.data.remote.AuthService
 import com.sebo.timelog.data.remote.SyncService
 import com.sebo.timelog.utils.effectiveBilledHours
 import com.sebo.timelog.utils.pendingHours
@@ -10,7 +12,9 @@ import kotlinx.coroutines.flow.Flow
 
 class WorkLogRepository(
     private val workLogDao: WorkLogDao,
-    private val syncService: SyncService? = null
+    private val projectDao: ProjectDao,
+    private val syncService: SyncService? = null,
+    private val authService: AuthService? = null
 ) {
 
     fun getAllWorkLogs(): Flow<List<WorkLog>> = workLogDao.getAllWorkLogs()
@@ -48,19 +52,27 @@ class WorkLogRepository(
 
     suspend fun insert(workLog: WorkLog): Long {
         val id = workLogDao.insert(workLog)
-        syncService?.syncWorkLog(workLog.copy(id = id))
+        val uid = authService?.currentUser()?.uid
+        val projectCloudId = projectDao.getProjectByIdOnce(workLog.projectId)?.cloudId
+        syncService?.syncWorkLog(workLog.copy(id = id), uid, projectCloudId)
         return id
     }
 
     suspend fun insertAll(workLogs: List<WorkLog>) {
         workLogDao.insertAll(workLogs)
-        workLogs.forEach { syncService?.syncWorkLog(it) }
+        val uid = authService?.currentUser()?.uid
+        workLogs.forEach {
+            val projectCloudId = projectDao.getProjectByIdOnce(it.projectId)?.cloudId
+            syncService?.syncWorkLog(it, uid, projectCloudId)
+        }
     }
 
     suspend fun update(workLog: WorkLog) {
         val updated = workLog.copy(updatedAt = System.currentTimeMillis())
         workLogDao.update(updated)
-        syncService?.syncWorkLog(updated)
+        val uid = authService?.currentUser()?.uid
+        val projectCloudId = projectDao.getProjectByIdOnce(updated.projectId)?.cloudId
+        syncService?.syncWorkLog(updated, uid, projectCloudId)
     }
 
     suspend fun updateBilling(workLog: WorkLog, totalBilledHours: Double) {

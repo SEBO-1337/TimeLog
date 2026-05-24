@@ -44,7 +44,7 @@ class TimerViewModel(
     private val _description = MutableStateFlow("")
     val description: StateFlow<String> = _description.asStateFlow()
 
-    val projects: StateFlow<List<Project>> = projectRepository.getAllProjects()
+    val projects: StateFlow<List<Project>> = projectRepository.getVisibleProjects()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val currentTimer: StateFlow<Timer?> = timerRepository.getAnyTimer()

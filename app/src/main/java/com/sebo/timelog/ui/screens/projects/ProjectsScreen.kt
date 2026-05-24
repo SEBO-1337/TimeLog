@@ -35,6 +35,7 @@ fun ProjectsScreen(
     onProjectClick: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val canCreateProject = viewModel.canCreateProject()
     var showCreateDialog by remember { mutableStateOf(false) }
     var projectToEdit by remember { mutableStateOf<Project?>(null) }
     var projectToDelete by remember { mutableStateOf<Project?>(null) }
@@ -44,8 +45,10 @@ fun ProjectsScreen(
             TimeLogTopAppBar(title = "Projekte")
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Neues Projekt")
+            if (canCreateProject) {
+                FloatingActionButton(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Neues Projekt")
+                }
             }
         },
         modifier = modifier
@@ -69,6 +72,8 @@ fun ProjectsScreen(
                         ProjectList(
                             projects = state.projects,
                             onProjectClick = { project -> onProjectClick(project.id) },
+                            canEditProject = { project -> viewModel.canEditProject(project) },
+                            canDeleteProject = { project -> viewModel.canDeleteProject(project) },
                             onEditProject = { project -> projectToEdit = project },
                             onDeleteProject = { project -> projectToDelete = project }
                         )

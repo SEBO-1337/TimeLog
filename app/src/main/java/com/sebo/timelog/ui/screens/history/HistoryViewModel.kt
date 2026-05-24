@@ -33,14 +33,15 @@ class HistoryViewModel(
 
     val uiState: StateFlow<HistoryUiState> = combine(
         workLogRepository.getAllWorkLogs(),
-        projectRepository.getAllProjects(),
+        projectRepository.getVisibleProjects(),
         _filterProjectId
     ) { workLogs, projects, filterProjectId ->
         val projectMap = projects.associateBy { it.id }
+        val visibleLogs = workLogs.filter { it.projectId in projectMap.keys }
         val filteredLogs = if (filterProjectId != null) {
-            workLogs.filter { it.projectId == filterProjectId }
+            visibleLogs.filter { it.projectId == filterProjectId }
         } else {
-            workLogs
+            visibleLogs
         }
         HistoryUiState(
             workLogs = filteredLogs,

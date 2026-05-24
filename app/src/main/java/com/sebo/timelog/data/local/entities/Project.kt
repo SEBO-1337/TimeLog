@@ -10,7 +10,11 @@ enum class ProjectStatus {
 
 @Entity(
     tableName = "projects",
-    indices = [Index(value = ["name"], unique = true)]
+    indices = [
+        Index(value = ["name"], unique = true),
+        Index(value = ["createdBy"]),
+        Index(value = ["cloudId"], unique = true)
+    ]
 )
 data class Project(
     @PrimaryKey(autoGenerate = true)
@@ -20,6 +24,8 @@ data class Project(
     val color: String = "#2196F3",
     val hourlyRate: Double = 0.0,
     val status: ProjectStatus = ProjectStatus.ACTIVE,
+    val cloudId: String = "",   // Stabiler Cloud-Schluessel (UUID)
+    val createdBy: String = "",  // Firebase UID des Erstellers
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

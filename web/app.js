@@ -69,6 +69,14 @@ function fmtCurrency(amount) {
   }).format(Number.isFinite(amount) ? amount : 0);
 }
 
+function projectKey(project) {
+  return String(project?.cloudId || project?.id || '');
+}
+
+function logProjectKey(log) {
+  return String(log?.projectCloudId || log?.projectId || '');
+}
+
 function getBilledHours(log) {
   const workedHours = Number(log.hoursWorked) || 0;
   const explicitBilledHours = Math.max(0, Number(log.hoursBilled) || 0);
@@ -141,7 +149,7 @@ function renderTimer() {
   state.timerTick = null;
   if (!state.timer) return card.classList.add('hidden');
 
-  const proj = state.projects.find(p => p.id === state.timer.projectId);
+  const proj = state.projects.find(p => projectKey(p) === logProjectKey(state.timer));
   card.classList.remove('hidden');
   document.getElementById('timer-dot').style.background = state.timer.projectColor || proj?.color || '#2196F3';
   document.getElementById('timer-project-name').textContent = state.timer.projectName || proj?.name || 'Unbekannt';
@@ -225,7 +233,8 @@ function renderProjects() {
   }
 
   const enriched = state.projects.map(p => {
-    const logs = state.workLogs.filter(l => l.projectId === p.id);
+    const key = projectKey(p);
+    const logs = state.workLogs.filter(l => logProjectKey(l) === key);
     const totalHours = logs.reduce((sum, log) => sum + (Number(log.hoursWorked) || 0), 0);
     const outstandingHours = logs.reduce((sum, log) => {
       const workedHours = Number(log.hoursWorked) || 0;
@@ -241,7 +250,7 @@ function renderProjects() {
     };
   }).sort((a, b) => b.totalHours - a.totalHours);
 
-  el.innerHTML = enriched.map(p => `<div class="project-card project-card-clickable" onclick="showProjectDetail(${p.id})">
+  el.innerHTML = enriched.map(p => `<div class="project-card project-card-clickable" onclick="showProjectDetail('${projectKey(p)}')">
     <div class="project-header">
       <div class="project-avatar" style="background:${p.color}22;color:${p.color}">📁</div>
       <div class="project-meta"><div class="project-name">${esc(p.name)}</div></div>
@@ -259,10 +268,10 @@ function renderProjects() {
 }
 
 function showProjectDetail(projectId) {
-  const p = state.projects.find(pr => String(pr.id) === String(projectId));
+  const p = state.projects.find(pr => projectKey(pr) === String(projectId));
   if (!p) return;
 
-  const logs = state.workLogs.filter(l => String(l.projectId) === String(projectId));
+  const logs = state.workLogs.filter(l => logProjectKey(l) === String(projectId));
   const totalHours = logs.reduce((s, l) => s + (Number(l.hoursWorked) || 0), 0);
   const billedHours = logs.reduce((s, l) => s + getBilledHours(l), 0);
   const outstandingHours = Math.max(0, totalHours - billedHours);
@@ -314,7 +323,7 @@ function openEditLogModal(logId) {
   // Projekt-Dropdown befüllen
   const sel = document.getElementById('edit-log-project');
   sel.innerHTML = state.projects.map(p =>
-    `<option value="${p.id}" ${String(p.id) === String(log.projectId) ? 'selected' : ''}>${esc(p.name)}</option>`
+    `<option value="${projectKey(p)}" ${projectKey(p) === logProjectKey(log) ? 'selected' : ''}>${esc(p.name)}</option>`
   ).join('');
 
   // Datum (ISO-Format YYYY-MM-DD für date input)
@@ -338,7 +347,7 @@ function closeEditLogModal() {
 
 async function saveEditLog() {
   const logId = document.getElementById('edit-log-id').value;
-  const projectId = Number(document.getElementById('edit-log-project').value);
+  const selectedProjectKey = String(document.getElementById('edit-log-project').value || '');
   const dateVal = document.getElementById('edit-log-date').value;
   const hoursVal = document.getElementById('edit-log-hours').value.replace(',', '.');
   const description = document.getElementById('edit-log-desc').value.trim();
@@ -353,7 +362,12 @@ async function saveEditLog() {
   }
 
   const dateTs = new Date(dateVal).getTime();
-  const project = state.projects.find(p => p.id === projectId);
+  const project = state.projects.find(p => projectKey(p) === selectedProjectKey);
+  if (!project) {
+    errEl.textContent = 'Projekt nicht gefunden.';
+    errEl.classList.remove('hidden');
+    return;
+  }
 
   try {
     errEl.classList.add('hidden');
@@ -362,7 +376,8 @@ async function saveEditLog() {
     saveBtn.textContent = 'Speichern …';
 
     await rootRef().collection('workLogs').doc(logId).update({
-      projectId,
+      projectId: Number(project.id) || 0,
+      projectCloudId: projectKey(project),
       projectName: project?.name || '',
       projectColor: project?.color || '#2196F3',
       date: dateTs,
@@ -393,9 +408,9 @@ function fillProjectFilter() {
   sel.innerHTML = '<option value="">Alle Projekte</option>';
   state.projects.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = p.id;
+    opt.value = projectKey(p);
     opt.textContent = p.name;
-    if (String(cur) === String(p.id)) opt.selected = true;
+    if (String(cur) === projectKey(p)) opt.selected = true;
     sel.appendChild(opt);
   });
 }
@@ -409,7 +424,7 @@ function loadHistory() {
   const toTs = to ? new Date(`${to}T23:59:59`).getTime() : null;
 
   const filtered = state.workLogs.filter(l => {
-    if (pid && String(l.projectId) !== String(pid)) return false;
+    if (pid && logProjectKey(l) !== String(pid)) return false;
     if (fromTs && l.date < fromTs) return false;
     if (toTs && l.date > toTs) return false;
     return true;
@@ -426,8 +441,8 @@ function startClock() {
   setInterval(tick, 30_000);
 }
 
-function parseAllowedProjectIds(input) {
-  return input.split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n));
+function normalizeAllowedProjectIds(rawList) {
+  return (rawList || []).map(v => String(v || '').trim()).filter(Boolean);
 }
 
 async function ensureUserProfile(user) {
@@ -450,7 +465,7 @@ async function ensureUserProfile(user) {
 
 async function loadAllProjectsAdmin() {
   const snap = await rootRef().collection('projects').get();
-  return snap.docs.map(d => d.data());
+  return snap.docs.map(d => ({ ...d.data(), cloudId: d.id }));
 }
 
 async function loadProjectsForCustomer(allowedIds) {
@@ -460,8 +475,10 @@ async function loadProjectsForCustomer(allowedIds) {
 
   const results = [];
   for (const ids of chunks) {
-    const snap = await rootRef().collection('projects').where('id', 'in', ids).get();
-    snap.docs.forEach(d => results.push(d.data()));
+    const snap = await rootRef().collection('projects')
+      .where(firebase.firestore.FieldPath.documentId(), 'in', ids)
+      .get();
+    snap.docs.forEach(d => results.push({ ...d.data(), cloudId: d.id }));
   }
   return results;
 }
@@ -476,7 +493,7 @@ async function loadWorkLogsForAllowed(allowedIds) {
     // Kein orderBy hier – würde Composite Index erfordern.
     // Sortierung erfolgt client-seitig unten.
     const snap = await rootRef().collection('workLogs')
-      .where('projectId', 'in', ids)
+      .where('projectCloudId', 'in', ids)
       .limit(300)
       .get();
     snap.docs.forEach(d => results.push(d.data()));
@@ -492,7 +509,7 @@ async function loadAllData() {
   btn?.classList.add('spinning');
 
   try {
-    const allowedIds = state.userProfile.allowedProjectIds || [];
+    const allowedIds = normalizeAllowedProjectIds(state.userProfile.allowedProjectIds);
 
     let projects = [];
     let workLogs = [];
@@ -502,7 +519,7 @@ async function loadAllData() {
         rootRef().collection('projects').get(),
         rootRef().collection('workLogs').orderBy('date', 'desc').limit(500).get(),
       ]);
-      projects = pSnap.docs.map(d => d.data());
+      projects = pSnap.docs.map(d => ({ ...d.data(), cloudId: d.id }));
       workLogs = wSnap.docs.map(d => d.data());
     } else if (isCustomer()) {
       // Separat laden: wenn WorkLogs fehlschlagen, erscheinen Projekte trotzdem.
@@ -524,18 +541,18 @@ async function loadAllData() {
     } catch (e) {
       console.warn('activeTimer lesen fehlgeschlagen (ignoriert)', e);
     }
-    const projectsById = new Map(projects.map(p => [String(p.id), p]));
+    const projectsByKey = new Map(projects.map(p => [projectKey(p), p]));
 
     state.projects = projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     state.workLogs = workLogs.map(log => ({
       ...log,
       hoursWorked: roundUpToQuarter(Number(log.hoursWorked) || 0),
-      projectName: log.projectName || projectsById.get(String(log.projectId))?.name,
-      projectColor: log.projectColor || projectsById.get(String(log.projectId))?.color,
+      projectName: log.projectName || projectsByKey.get(logProjectKey(log))?.name,
+      projectColor: log.projectColor || projectsByKey.get(logProjectKey(log))?.color,
     }));
 
     const timer = timerSnap?.exists ? timerSnap.data() : null;
-    state.timer = timer && (isAdmin() || allowedIds.includes(timer.projectId)) ? timer : null;
+    state.timer = timer && (isAdmin() || allowedIds.includes(logProjectKey(timer))) ? timer : null;
 
     fillProjectFilter();
     renderDashboard();
@@ -560,19 +577,27 @@ async function loadAdminUsers() {
 
   el.innerHTML = usersSnap.docs.map(doc => {
     const u = doc.data();
-    const allowed = (u.allowedProjectIds || []).join(',');
+    const allowedSet = new Set(normalizeAllowedProjectIds(u.allowedProjectIds));
+    const projectChecks = projects.length
+      ? projects.map(p => {
+          const key = projectKey(p);
+          const checked = allowedSet.has(key) ? 'checked' : '';
+          return `<label class="admin-project-item"><input type="checkbox" data-project-check value="${esc(key)}" ${checked}> <span>${esc(p.name)} <small class="admin-project-key">(${esc(key)})</small></span></label>`;
+        }).join('')
+      : '<div class="log-meta">Keine Projekte vorhanden</div>';
     return `<div class="admin-user-card" data-uid="${u.uid}">
       <div class="admin-user-head">
         <div class="admin-user-email">${esc(u.email || u.uid)}</div>
         <select class="admin-role-select" data-role>
           <option value="NEW" ${u.role === 'NEW' ? 'selected' : ''}>NEW</option>
           <option value="CUSTOMER" ${u.role === 'CUSTOMER' ? 'selected' : ''}>CUSTOMER</option>
+          <option value="TECHNICIAN" ${u.role === 'TECHNICIAN' ? 'selected' : ''}>TECHNICIAN</option>
           <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
         </select>
       </div>
-      <input class="admin-projects-input" data-projects value="${esc(allowed)}" placeholder="Freigegebene Projekt-IDs, z.B. 1,2,5" />
+      <div class="admin-projects-grid" data-projects-grid>${projectChecks}</div>
       <button class="admin-save-btn" data-save>Speichern</button>
-      <div class="log-meta">Verfuegbare Projekte: ${projects.map(p => `${p.id}:${esc(p.name)}`).join(' | ') || '-'}</div>
+      <div class="log-meta">Projektfreigaben gelten für CUSTOMER (UUID/cloudId-basiert).</div>
     </div>`;
   }).join('');
 
@@ -581,7 +606,7 @@ async function loadAdminUsers() {
       const card = btn.closest('.admin-user-card');
       const uid = card.getAttribute('data-uid');
       const role = card.querySelector('[data-role]').value;
-      const allowedProjectIds = parseAllowedProjectIds(card.querySelector('[data-projects]').value);
+      const allowedProjectIds = Array.from(card.querySelectorAll('[data-project-check]:checked')).map(el => el.value);
       await usersCol().doc(uid).set({ role, allowedProjectIds, updatedAt: Date.now() }, { merge: true });
       await loadAdminUsers();
     });

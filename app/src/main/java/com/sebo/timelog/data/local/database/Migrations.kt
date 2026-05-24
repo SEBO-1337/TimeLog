@@ -15,3 +15,27 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * Migration von Version 2 auf 3:
+ * Fügt die Spalte `createdBy` zur Tabelle `projects` hinzu (Firebase UID des Erstellers).
+ * Dies ist notwendig für Rollen-basierte Filterung (Monteure sehen nur ihre Projects).
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE projects ADD COLUMN createdBy TEXT NOT NULL DEFAULT ''")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_projects_createdBy` ON `projects` (`createdBy`)")
+    }
+}
+
+/**
+ * Migration von Version 3 auf 4:
+ * Fuegt `cloudId` als UUID-basierte Projekt-ID fuer den Cloud-Sync hinzu.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE projects ADD COLUMN cloudId TEXT NOT NULL DEFAULT ''")
+        db.execSQL("UPDATE projects SET cloudId = 'legacy-' || id WHERE cloudId = ''")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_projects_cloudId` ON `projects` (`cloudId`)")
+    }
+}
+

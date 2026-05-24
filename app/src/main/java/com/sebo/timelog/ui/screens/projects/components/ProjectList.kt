@@ -13,6 +13,8 @@ import com.sebo.timelog.data.local.entities.Project
 fun ProjectList(
     projects: List<Project>,
     onProjectClick: (Project) -> Unit,
+    canEditProject: (Project) -> Boolean,
+    canDeleteProject: (Project) -> Boolean,
     onEditProject: (Project) -> Unit,
     onDeleteProject: (Project) -> Unit,
     modifier: Modifier = Modifier
@@ -29,6 +31,8 @@ fun ProjectList(
             ProjectCard(
                 project = project,
                 onClick = { onProjectClick(project) },
+                canEdit = canEditProject(project),
+                canDelete = canDeleteProject(project),
                 onEdit = { onEditProject(project) },
                 onDelete = { onDeleteProject(project) }
             )

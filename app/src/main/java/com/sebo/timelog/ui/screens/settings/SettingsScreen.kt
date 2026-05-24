@@ -11,8 +11,10 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -38,6 +40,12 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val syncStatus by context.appContainer.syncStatus.collectAsState()
+    val currentUser = context.appContainer.authService?.currentUser()
+    val userLabel = when {
+        currentUser?.email?.isNullOrBlank() == false -> currentUser.email!!
+        currentUser != null -> "UID: ${currentUser.uid.take(8)}..."
+        else -> "Nicht angemeldet"
+    }
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
 
     Scaffold(
@@ -108,11 +116,23 @@ fun SettingsScreen(
                 onClick = { }
             )
 
+            HorizontalDivider()
+
+            // Account
+            SettingsSection(title = "Account")
             SettingsItem(
-                icon = { Icon(Icons.Default.CloudOff, contentDescription = null) },
+                icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                title = "Angemeldet als",
+                subtitle = userLabel,
+                onClick = { }
+            )
+
+            SettingsItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                 title = "Abmelden",
-                subtitle = "Firebase Konto trennen",
-                onClick = onLogout
+                subtitle = "Aus deinem Konto abmelden",
+                onClick = onLogout,
+                titleColor = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -133,10 +153,11 @@ private fun SettingsItem(
     icon: @Composable () -> Unit,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    titleColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
 ) {
     ListItem(
-        headlineContent = { Text(title) },
+        headlineContent = { Text(title, color = titleColor) },
         supportingContent = { Text(subtitle) },
         leadingContent = icon,
         modifier = Modifier

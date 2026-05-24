@@ -21,11 +21,17 @@ interface ProjectDao {
     @Query("SELECT * FROM projects WHERE status = :status ORDER BY updatedAt DESC")
     fun getProjectsByStatus(status: ProjectStatus = ProjectStatus.ACTIVE): Flow<List<Project>>
 
+    @Query("SELECT * FROM projects WHERE createdBy = :userId ORDER BY updatedAt DESC")
+    fun getProjectsByCreator(userId: String): Flow<List<Project>>
+
     @Query("SELECT * FROM projects WHERE id = :id")
     fun getProjectById(id: Long): Flow<Project?>
 
     @Query("SELECT * FROM projects WHERE id = :id")
     suspend fun getProjectByIdOnce(id: Long): Project?
+
+    @Query("SELECT * FROM projects WHERE cloudId = :cloudId LIMIT 1")
+    suspend fun getProjectByCloudIdOnce(cloudId: String): Project?
 
     @Transaction
     @Query("SELECT * FROM projects WHERE id = :id")

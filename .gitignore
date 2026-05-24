@@ -21,3 +21,5 @@ app/google-services.json
 /app/release/output-metadata.json
 /app/release/*.apk
 *.md
+.idea/deploymentTargetSelector.xml
+.idea/copilotDiffState.xml

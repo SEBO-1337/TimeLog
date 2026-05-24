@@ -1,5 +1,6 @@
 package com.sebo.timelog.data.repositories
 
+import com.sebo.timelog.data.local.dao.ProjectDao
 import com.sebo.timelog.data.local.dao.TimerDao
 import com.sebo.timelog.data.local.entities.Timer
 import com.sebo.timelog.data.remote.SyncService
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 class TimerRepository(
     private val timerDao: TimerDao,
+    private val projectDao: ProjectDao,
     private val syncService: SyncService? = null
 ) {
 
@@ -20,13 +22,15 @@ class TimerRepository(
 
     suspend fun insert(timer: Timer): Long {
         val id = timerDao.insert(timer)
-        syncService?.syncTimer(timer.copy(id = id))
+        val projectCloudId = projectDao.getProjectByIdOnce(timer.projectId)?.cloudId
+        syncService?.syncTimer(timer.copy(id = id), projectCloudId)
         return id
     }
 
     suspend fun update(timer: Timer) {
         timerDao.update(timer)
-        syncService?.syncTimer(timer)
+        val projectCloudId = projectDao.getProjectByIdOnce(timer.projectId)?.cloudId
+        syncService?.syncTimer(timer, projectCloudId)
     }
 
     suspend fun delete(timer: Timer) {

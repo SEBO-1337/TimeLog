@@ -5,6 +5,9 @@ TimeLog ist eine Zeiterfassungs-Loesung mit drei Teilen:
 - **Backend** (`backend/`) als lokale REST-API fuer Sync und Dashboard-Zugriff
 - **Web/PWA** (`web/`) fuer Browserzugriff, Hosting ueber Firebase
 
+**Neu: Rollen- und Berechtigungssystem** mit Admin, Technician (Monteur) und Customer Rollen!
+Siehe `ROLES_SYSTEM.md` fuer Details.
+
 ## Architektur (kurz)
 
 - Android speichert lokal (Room) und synchronisiert Daten.
@@ -13,6 +16,10 @@ TimeLog ist eine Zeiterfassungs-Loesung mit drei Teilen:
 
 Weiterfuehrende Doku:
 - Firebase Setup: `FIREBASE_SETUP.md`
+- **Rollen & Berechtigungen: `ROLES_SYSTEM.md`** ← NEU!
+- **Implementierungs-Guide: `IMPLEMENTATION_GUIDE.md`** ← NEU!
+- **Firestore Admin Setup: `FIRESTORE_ADMIN_SETUP.md`** ← NEU!
+- **Aenderungs-Summary: `CHANGES_SUMMARY.md`** ← NEU!
 - Backend Details: `backend/README.md`
 
 ## Voraussetzungen
@@ -36,6 +43,19 @@ TimeLog/
 ```
 
 ## Schnellstart (Windows / PowerShell)
+
+### 0) Rollen-System konfigurieren (optional aber empfohlen)
+
+Die App unterstützt jetzt ein Rollen-System. Nach der Registrierung musst du die Benutzer-Rolle in Firestore setzen:
+
+1. Öffne **Firebase Console** → **Firestore Database**
+2. Gehe zu `users/{deine-uid}` (wird automatisch bei Registrierung erstellt)
+3. Ändere `role` von "NEW" zu:
+   - **"ADMIN"** - Vollständiger Zugriff (Empfohlen für dich!)
+   - **"TECHNICIAN"** - Sieht nur eigene Projekte
+   - **"CUSTOMER"** - Sieht nur freigegebene Projekte
+
+Detaillierter Guide: `FIRESTORE_ADMIN_SETUP.md`
 
 ### 1) Backend starten
 

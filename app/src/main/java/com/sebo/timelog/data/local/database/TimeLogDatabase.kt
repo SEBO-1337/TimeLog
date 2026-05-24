@@ -13,7 +13,7 @@ import com.sebo.timelog.data.local.entities.WorkLog
 
 @Database(
     entities = [Project::class, WorkLog::class, Timer::class],
-    version = 2,
+    version = 4,
     exportSchema = true
 )
 abstract class TimeLogDatabase : RoomDatabase() {
@@ -35,7 +35,7 @@ abstract class TimeLogDatabase : RoomDatabase() {
                     TimeLogDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance

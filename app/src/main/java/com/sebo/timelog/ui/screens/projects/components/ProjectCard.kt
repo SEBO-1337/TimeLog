@@ -38,6 +38,8 @@ import com.sebo.timelog.utils.toComposeColor
 fun ProjectCard(
     project: Project,
     onClick: () -> Unit,
+    canEdit: Boolean,
+    canDelete: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -97,19 +99,23 @@ fun ProjectCard(
             }
 
             // Actions-Buttons
-            IconButton(onClick = onEdit) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Bearbeiten",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            if (canEdit) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Bearbeiten",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Löschen",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            if (canDelete) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Löschen",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
