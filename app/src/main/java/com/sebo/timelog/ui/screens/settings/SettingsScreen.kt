@@ -2,6 +2,8 @@ package com.sebo.timelog.ui.screens.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -181,7 +183,18 @@ fun SettingsScreen(
                 icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
                 title = "Benachrichtigungen",
                 subtitle = "Timer- und Erinnerungsbenachrichtigungen",
-                onClick = { /* TODO */ }
+                onClick = {
+                    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                    } else {
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        }
+                    }
+                    context.startActivity(intent)
+                }
             )
 
             HorizontalDivider()
