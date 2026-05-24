@@ -4,12 +4,15 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
@@ -32,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -40,10 +44,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +59,7 @@ import kotlinx.coroutines.launch
 import com.sebo.timelog.BuildConfig
 import com.sebo.timelog.data.remote.SyncStatus
 import com.sebo.timelog.ui.components.TimeLogTopAppBar
+import com.sebo.timelog.ui.theme.ThemePreference
 import com.sebo.timelog.utils.appContainer
 import java.text.DateFormat
 
@@ -71,6 +80,24 @@ fun SettingsScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+
+    val themePreference by context.appContainer.themeStore.themePreference.collectAsState(
+        initial = ThemePreference.SYSTEM
+    )
+    var showThemeDialog by remember { mutableStateOf(false) }
+
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            current = themePreference,
+            onSelect = { selected ->
+                coroutineScope.launch {
+                    context.appContainer.themeStore.setThemePreference(selected)
+                }
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
 
     val updateViewModel: UpdateViewModel = viewModel()
     val updateState by updateViewModel.state.collectAsState()
@@ -142,8 +169,8 @@ fun SettingsScreen(
             SettingsItem(
                 icon = { Icon(Icons.Default.ColorLens, contentDescription = null) },
                 title = "Design",
-                subtitle = "Systemstandard",
-                onClick = { /* TODO: Dark Mode */ }
+                subtitle = themePreference.label,
+                onClick = { showThemeDialog = true }
             )
 
             HorizontalDivider()
@@ -331,6 +358,49 @@ private fun UpdateAvailableDialog(
             OutlinedButton(onClick = onOpenReleasePage) {
                 Text("Release-Seite")
             }
+        }
+    )
+}
+
+@Composable
+private fun ThemeSelectionDialog(
+    current: ThemePreference,
+    onSelect: (ThemePreference) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.ColorLens, contentDescription = null) },
+        title = { Text("Design") },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                ThemePreference.entries.forEach { pref ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = pref == current,
+                                onClick = { onSelect(pref) },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = pref == current,
+                            onClick = null
+                        )
+                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                        Text(
+                            text = pref.label,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Abbrechen") }
         }
     )
 }
